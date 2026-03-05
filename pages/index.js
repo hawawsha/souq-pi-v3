@@ -18,13 +18,14 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState('');
+  const [paying, setPaying] = useState(null);
   const [form, setForm] = useState({ name:'', price_pi:'', description:'', image_url:'', brand:'', year:'', location:'', type:'Villa', condition:'New', status:'Available' });
 
   const isAdmin = user && user.username === ADMIN;
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Pi) {
-      window.Pi.init({ version: "2.0", sandbox: false });
+      window.Pi.init({ version: "2.0", sandbox: true });
     }
   }, []);
 
@@ -39,7 +40,7 @@ export default function Home() {
 
   function loginWithPi() {
     try {
-      window.Pi.authenticate(['username'], (auth) => {
+      window.Pi.authenticate(['username', 'payments'], (auth) => {
         if (auth && auth.user) {
           setUser(auth.user);
           showToast('مرحباً ' + auth.user.username + '! 👋');
@@ -68,6 +69,47 @@ export default function Home() {
     setPage('home');
     setSection(null);
     setProducts([]);
+  }
+
+  async function buyWithPi(product) {
+    if (!user) { showToast('سجل دخول أولاً!'); return; }
+    if (paying) return;
+    setPaying(product.id);
+
+    const payment = {
+      amount: product.fields.price_pi,
+      memo: `شراء: ${product.fields.name}`,
+      metadata: { productId: product.id, table: section }
+    };
+
+    const callbacks = {
+      onReadyForServerApproval: async (paymentId) => {
+        try {
+          await fetch('/api/payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'approve', paymentId })
+          });
+        } catch(e) { showToast('خطأ في الموافقة'); }
+      },
+      onReadyForServerCompletion: async (paymentId, txid) => {
+        try {
+          await fetch('/api/payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'complete', paymentId, txid })
+          });
+          showToast('✅ تمت عملية الشراء بنجاح!');
+          setPaying(null);
+        } catch(e) { showToast('خطأ في إتمام الدفع'); }
+      },
+      onCancel: () => { showToast('❌ تم إلغاء الدفع'); setPaying(null); },
+      onError: (err) => { showToast('❌ خطأ في الدفع'); setPaying(null); }
+    };
+
+    try {
+      window.Pi.createPayment(payment, callbacks);
+    } catch(e) { showToast('خطأ في Pi SDK'); setPaying(null); }
   }
 
   async function submitProduct() {
@@ -115,9 +157,12 @@ export default function Home() {
         .price { color:#f0a500; font-weight:bold; font-size:1.1em; margin-bottom:4px; }
         .consensus { color:#888; font-size:0.75em; margin-bottom:8px; background:#f5f0ff; padding:3px 8px; border-radius:8px; display:inline-block; }
         .prod-info p { color:#666; font-size:0.85em; margin-bottom:8px; }
-        .status { display:inline-block; padding:3px 10px; border-radius:10px; font-size:0.8em; font-weight:bold; }
+        .status { display:inline-block; padding:3px 10px; border-radius:10px; font-size:0.8em; font-weight:bold; margin-bottom:10px; }
         .available { background:#d4edda; color:#155724; }
         .sold { background:#f8d7da; color:#721c24; }
+        .buy-btn { width:100%; background:#6c3fc8; color:white; border:none; padding:10px; border-radius:10px; cursor:pointer; font-size:0.95em; font-weight:bold; margin-top:8px; }
+        .buy-btn:hover { background:#4a2a8a; }
+        .buy-btn:disabled { background:#ccc; cursor:not-allowed; }
         .loading { text-align:center; padding:50px; color:#6c3fc8; }
         .empty { text-align:center; padding:50px; color:#999; }
         .modal-bg { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; display:flex; align-items:center; justify-content:center; }
@@ -186,13 +231,20 @@ export default function Home() {
                 <div className="prod-info">
                   <h4>{r.fields.name}</h4>
                   <div className="price">π {r.fields.price_pi}</div>
-                  <div className="consensus">
-                    💰 سعر الإجماع: ${CONSENSUS_PRICE.toLocaleString()} / Pi
-                  </div>
+                  <div className="consensus">💰 سعر الإجماع: ${CONSENSUS_PRICE.toLocaleString()} / Pi</div>
                   <p>{r.fields.description}</p>
                   <span className={`status ${r.fields.status === 'Sold' ? 'sold' : 'available'}`}>
                     {r.fields.status === 'Sold' ? 'مباع' : 'متاح'}
                   </span>
+                  {r.fields.status !== 'Sold' && (
+                    <button
+                      className="buy-btn"
+                      onClick={() => buyWithPi(r)}
+                      disabled={paying === r.id}
+                    >
+                      {paying === r.id ? '⏳ جاري الدفع...' : '🛒 اشتري بـ Pi'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
