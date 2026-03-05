@@ -40,23 +40,22 @@ export default function Home() {
 
   function showToast(msg) {
     setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+    setTimeout(() => setToast(''), 4000);
   }
 
-  function loginWithPi() {
+  async function loginWithPi() {
     if (typeof window === 'undefined' || !window.Pi) {
       showToast('Pi Browser مطلوب');
       return;
     }
     try {
-      window.Pi.authenticate(['username', 'payments'], (auth) => {
-        if (auth && auth.user) {
-          setUser(auth.user);
-          showToast('مرحباً ' + auth.user.username + '! 👋');
-        }
-      }, (err) => showToast('خطأ في تسجيل الدخول'));
+      const auth = await window.Pi.authenticate(['username', 'payments']);
+      if (auth && auth.user) {
+        setUser(auth.user);
+        showToast('مرحباً ' + auth.user.username + '! 👋');
+      }
     } catch(e) {
-      showToast('Pi Browser مطلوب');
+      showToast('خطأ في تسجيل الدخول: ' + e.message);
     }
   }
 
@@ -115,12 +114,12 @@ export default function Home() {
         } catch(e) { showToast('خطأ في إتمام الدفع'); }
       },
       onCancel: () => { showToast('❌ تم إلغاء الدفع'); setPaying(null); },
-      onError: (err) => { showToast('❌ خطأ في الدفع'); setPaying(null); }
+      onError: (err) => { showToast('❌ خطأ: ' + err.message); setPaying(null); }
     };
 
     try {
-      window.Pi.createPayment(payment, callbacks);
-    } catch(e) { showToast('خطأ في Pi SDK'); setPaying(null); }
+      await window.Pi.createPayment(payment, callbacks);
+    } catch(e) { showToast('خطأ: ' + e.message); setPaying(null); }
   }
 
   async function submitProduct() {
@@ -141,7 +140,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <script src="https://sdk.minepi.com/pi-sdk.js" async />
+        <script src="https://sdk.minepi.com/pi-sdk.js" />
       </Head>
       <style>{`
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -188,7 +187,7 @@ export default function Home() {
         .form-actions { display:flex; gap:10px; margin-top:15px; }
         .btn-save { background:#6c3fc8; color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; flex:1; font-size:1em; }
         .btn-cancel { background:#eee; border:none; padding:12px; border-radius:10px; cursor:pointer; }
-        .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#4a2a8a; color:white; padding:12px 25px; border-radius:25px; z-index:9999; }
+        .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#4a2a8a; color:white; padding:12px 25px; border-radius:25px; z-index:9999; max-width:90%; text-align:center; }
         .user-info { display:flex; align-items:center; gap:8px; color:white; font-size:0.9em; }
         .admin-badge { color:#f0a500; font-size:0.8em; }
       `}</style>
