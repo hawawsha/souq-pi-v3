@@ -1,26 +1,23 @@
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   
-  const { table, fields } = req.body;
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  const { table } = req.query;
   const TOKEN = process.env.AIRTABLE_TOKEN;
   const BASE_ID = process.env.AIRTABLE_BASE_ID;
 
   try {
     const response = await fetch(
-      `https://api.airtable.com/v0/${BASE_ID}/${table}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ fields })
-      }
+      `https://api.airtable.com/v0/${BASE_ID}/${table}?maxRecords=100`,
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
     );
     const data = await response.json();
     res.status(200).json(data);
   } catch (e) {
-    res.status(500).json({ error: 'خطأ في الإضافة' });
+    res.status(500).json({ error: 'خطأ في الاتصال' });
   }
 }
