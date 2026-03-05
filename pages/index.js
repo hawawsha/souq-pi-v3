@@ -25,7 +25,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Pi) {
-      window.Pi.init({ version: "2.0", sandbox: true });
+      window.Pi.init({ version: "2.0", sandbox: false });
     }
   }, []);
 
