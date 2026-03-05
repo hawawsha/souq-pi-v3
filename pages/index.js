@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Head from 'next/head';
 
 const ADMIN = 'alhawawsheh1524';
 const CONSENSUS_PRICE = 314159;
@@ -24,9 +25,13 @@ export default function Home() {
   const isAdmin = user && user.username === ADMIN;
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Pi) {
-      window.Pi.init({ version: "2.0", sandbox: false });
-    }
+    const interval = setInterval(() => {
+      if (typeof window !== 'undefined' && window.Pi) {
+        window.Pi.init({ version: "2.0", sandbox: false });
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -39,6 +44,10 @@ export default function Home() {
   }
 
   function loginWithPi() {
+    if (typeof window === 'undefined' || !window.Pi) {
+      showToast('Pi Browser مطلوب');
+      return;
+    }
     try {
       window.Pi.authenticate(['username', 'payments'], (auth) => {
         if (auth && auth.user) {
@@ -46,7 +55,9 @@ export default function Home() {
           showToast('مرحباً ' + auth.user.username + '! 👋');
         }
       }, (err) => showToast('خطأ في تسجيل الدخول'));
-    } catch(e) { showToast('Pi Browser مطلوب'); }
+    } catch(e) {
+      showToast('Pi Browser مطلوب');
+    }
   }
 
   async function loadProducts(table) {
@@ -129,6 +140,9 @@ export default function Home() {
 
   return (
     <>
+      <Head>
+        <script src="https://sdk.minepi.com/pi-sdk.js" async />
+      </Head>
       <style>{`
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background:#f5f0ff; direction:rtl; }
@@ -237,11 +251,7 @@ export default function Home() {
                     {r.fields.status === 'Sold' ? 'مباع' : 'متاح'}
                   </span>
                   {r.fields.status !== 'Sold' && (
-                    <button
-                      className="buy-btn"
-                      onClick={() => buyWithPi(r)}
-                      disabled={paying === r.id}
-                    >
+                    <button className="buy-btn" onClick={() => buyWithPi(r)} disabled={paying === r.id}>
                       {paying === r.id ? '⏳ جاري الدفع...' : '🛒 اشتري بـ Pi'}
                     </button>
                   )}
@@ -278,7 +288,6 @@ export default function Home() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
-      <script src="https://sdk.minepi.com/pi-sdk.js" />
     </>
   );
 }
