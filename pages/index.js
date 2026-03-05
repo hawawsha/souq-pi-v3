@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 const ADMIN = 'alhawawsheh1524';
-const APP_ID = 'souq-pi-v2';
+const CONSENSUS_PRICE = 314159;
 
 const sections = [
   { key: 'Cars', ar: 'سيارات', en: 'Cars', icon: '🚗' },
@@ -112,7 +112,8 @@ export default function Home() {
         .prod-placeholder { width:100%; height:180px; background:#e8d9ff; display:flex; align-items:center; justify-content:center; font-size:3em; }
         .prod-info { padding:15px; }
         .prod-info h4 { color:#4a2a8a; margin-bottom:5px; }
-        .price { color:#f0a500; font-weight:bold; font-size:1.1em; margin-bottom:8px; }
+        .price { color:#f0a500; font-weight:bold; font-size:1.1em; margin-bottom:4px; }
+        .consensus { color:#888; font-size:0.75em; margin-bottom:8px; background:#f5f0ff; padding:3px 8px; border-radius:8px; display:inline-block; }
         .prod-info p { color:#666; font-size:0.85em; margin-bottom:8px; }
         .status { display:inline-block; padding:3px 10px; border-radius:10px; font-size:0.8em; font-weight:bold; }
         .available { background:#d4edda; color:#155724; }
@@ -178,10 +179,16 @@ export default function Home() {
             {!loading && products.length === 0 && <div className="empty">📦 لا توجد منتجات بعد</div>}
             {products.map(r => (
               <div key={r.id} className="prod-card">
-                {r.fields.image_url ? <img className="prod-img" src={r.fields.image_url} alt={r.fields.name} /> : <div className="prod-placeholder">{currentSection.icon}</div>}
+                {r.fields.image_url
+                  ? <img className="prod-img" src={r.fields.image_url} alt={r.fields.name} onError={e => e.target.style.display='none'} />
+                  : <div className="prod-placeholder">{currentSection.icon}</div>
+                }
                 <div className="prod-info">
                   <h4>{r.fields.name}</h4>
                   <div className="price">π {r.fields.price_pi}</div>
+                  <div className="consensus">
+                    💰 سعر الإجماع: ${CONSENSUS_PRICE.toLocaleString()} / Pi
+                  </div>
                   <p>{r.fields.description}</p>
                   <span className={`status ${r.fields.status === 'Sold' ? 'sold' : 'available'}`}>
                     {r.fields.status === 'Sold' ? 'مباع' : 'متاح'}
@@ -219,7 +226,6 @@ export default function Home() {
       )}
 
       {toast && <div className="toast">{toast}</div>}
-
       <script src="https://sdk.minepi.com/pi-sdk.js" />
     </>
   );
