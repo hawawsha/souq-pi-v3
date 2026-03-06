@@ -1,4 +1,3 @@
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -11,7 +10,6 @@ export default async function handler(req, res) {
   console.log('action:', action);
   console.log('paymentId:', paymentId);
   console.log('PI_API_KEY exists:', !!PI_API_KEY);
-  console.log('PI_API_KEY length:', PI_API_KEY ? PI_API_KEY.length : 0);
 
   if (!PI_API_KEY) return res.status(500).json({ error: 'PI_API_KEY missing' });
   if (!paymentId) return res.status(400).json({ error: 'paymentId missing' });
@@ -24,7 +22,7 @@ export default async function handler(req, res) {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${PI_API_KEY}`,
+          'Authorization': `Bearer ${PI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       });
@@ -43,7 +41,7 @@ export default async function handler(req, res) {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${PI_API_KEY}`,
+          'Authorization': `Bearer ${PI_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ txid })
