@@ -1,3 +1,4 @@
+// pages/api/payment.js
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -8,41 +9,33 @@ export default async function handler(req, res) {
   if (!PI_API_KEY) return res.status(500).json({ error: 'PI_API_KEY missing' });
 
   try {
+    let url = '';
+    let body = null;
+
     if (action === 'approve') {
-      const response = await fetch(
-        `https://api.minepi.com/v2/payments/${paymentId}/approve`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Key ${PI_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      const data = await response.json();
-      console.log('Approve:', JSON.stringify(data));
-      return res.status(200).json(data);
+      url = `https://api.minepi.com/v2/payments/${paymentId}/approve`;
+    } else if (action === 'complete') {
+      url = `https://api.minepi.com/v2/payments/${paymentId}/complete`;
+      body = JSON.stringify({ txid });
+    } else {
+      return res.status(400).json({ error: 'Invalid action' });
     }
 
-    if (action === 'complete') {
-      const response = await fetch(
-        `https://api.minepi.com/v2/payments/${paymentId}/complete`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Key ${PI_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ txid })
-        }
-      );
-      const data = await response.json();
-      console.log('Complete:', JSON.stringify(data));
-      return res.status(200).json(data);
-    }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${PI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body
+    });
 
-  } catch(e) {
-    console.error('Error:', e.message);
+    // فوراً استرجاع النتيجة بدون انتظار إضافي
+    const data = await response.json();
+    return res.status(response.status).json(data);
+
+  } catch (e) {
+    console.error('Payment Error:', e.message);
     res.status(500).json({ error: e.message });
   }
 }
