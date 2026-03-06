@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+useState, useEffect } from 'react';
 import Head from 'next/head';
 
 const ADMIN = 'alhawawsheh1524';
@@ -44,18 +44,20 @@ export default function Home() {
   }
 
   async function loginWithPi() {
-    if (typeof window === 'undefined' || !window.Pi) {
-      showToast('Pi Browser مطلوب');
+    if (!window.Pi) {
+      showToast('افتح التطبيق داخل Pi Browser');
       return;
     }
     try {
-      const auth = await window.Pi.authenticate(['username', 'payments']);
+      const scopes = ['username', 'payments'];
+      const auth = await window.Pi.authenticate(scopes);
       if (auth && auth.user) {
         setUser(auth.user);
-        showToast('مرحباً ' + auth.user.username + '! 👋');
+        showToast('مرحباً ' + auth.user.username + ' 👋');
       }
-    } catch(e) {
-      showToast('خطأ في تسجيل الدخول: ' + e.message);
+    } catch (error) {
+      console.error(error);
+      showToast('فشل تسجيل الدخول');
     }
   }
 
@@ -82,12 +84,12 @@ export default function Home() {
   }
 
   async function buyWithPi(product) {
-    if (!user) { showToast('سجل دخول أولاً!'); return; }
+    if (!user) { showToast('سجل الدخول أولاً'); return; }
     if (paying) return;
     setPaying(product.id);
 
     const payment = {
-      amount: product.fields.price_pi,
+      amount: Number(product.fields.price_pi),
       memo: `شراء: ${product.fields.name}`,
       metadata: { productId: product.id, table: section }
     };
@@ -95,31 +97,49 @@ export default function Home() {
     const callbacks = {
       onReadyForServerApproval: async (paymentId) => {
         try {
-          await fetch('/api/payment', {
+          const res = await fetch('/api/payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'approve', paymentId })
           });
-        } catch(e) { showToast('خطأ في الموافقة'); }
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Approve failed');
+          console.log('Approve success', data);
+        } catch (e) {
+          showToast('خطأ في موافقة الخادم');
+          console.error(e);
+          setPaying(null);
+        }
       },
       onReadyForServerCompletion: async (paymentId, txid) => {
         try {
-          await fetch('/api/payment', {
+          const res = await fetch('/api/payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'complete', paymentId, txid })
           });
-          showToast('✅ تمت عملية الشراء بنجاح!');
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Completion failed');
+          console.log('Payment completed', data);
+          showToast('✅ تمت عملية الشراء بنجاح');
           setPaying(null);
-        } catch(e) { showToast('خطأ في إتمام الدفع'); }
+        } catch (e) {
+          showToast('❌ فشل إتمام الدفع');
+          console.error(e);
+          setPaying(null);
+        }
       },
-      onCancel: () => { showToast('❌ تم إلغاء الدفع'); setPaying(null); },
-      onError: (err) => { showToast('❌ خطأ: ' + err.message); setPaying(null); }
+      onCancel: () => { showToast('تم إلغاء الدفع'); setPaying(null); },
+      onError: (err) => { showToast('خطأ: ' + err.message); console.error(err); setPaying(null); }
     };
 
     try {
       await window.Pi.createPayment(payment, callbacks);
-    } catch(e) { showToast('خطأ: ' + e.message); setPaying(null); }
+    } catch (e) {
+      console.error(e);
+      showToast('فشل إنشاء الدفع');
+      setPaying(null);
+    }
   }
 
   async function submitProduct() {
