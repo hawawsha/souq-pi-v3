@@ -1,125 +1,142 @@
-import { useState, useEffect } from "react";
+export default function ProductList({
+  products,
+  adminSecret,
+  reloadProducts,
+  onEdit,
+  showToast,
+}) {
+  async function deleteProduct(productId) {
+    if (!confirm("Delete this product?")) return;
 
-import AdminLogin from "../components/AdminLogin";
-import ProductForm from "../components/ProductForm";
-import ProductList from "../components/ProductList";
-import EditProductModal from "../components/EditProductModal";
-import Toast from "../components/Toast";
-
-export default function AdminPage() {
-  const [logged, setLogged] = useState(false);
-  const [adminSecret, setAdminSecret] = useState("");
-  const [products, setProducts] = useState([]);
-
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [showEdit, setShowEdit] = useState(false);
-
-  const [toast, setToast] = useState({
-    show: false,
-    type: "success",
-    message: "",
-  });
-
-  async function loadProducts() {
     try {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/admin/delete-product", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
+        },
+        body: JSON.stringify({
+          productId,
+        }),
+      });
+
       const data = await res.json();
 
-      if (data.success) {
-        setProducts(data.data.products || []);
+      if (!data.success) {
+        showToast?.("error", data.error || "Delete failed");
+        return;
       }
+
+      showToast?.("success", "✅ Product deleted");
+
+      reloadProducts();
+
     } catch (err) {
       console.error(err);
+
+      showToast?.("error", "Delete failed");
     }
   }
 
-  useEffect(() => {
-    if (logged) {
-      loadProducts();
-    }
-  }, [logged]);
-
-  function handleLogin(secret) {
-    setAdminSecret(secret);
-    setLogged(true);
-  }
-
-  if (!logged) {
-    return <AdminLogin onLogin={handleLogin} />;
+  if (!products.length) {
+    return (
+      <div style={{ marginTop: 30 }}>
+        <h2>Products</h2>
+        <p>No products found.</p>
+      </div>
+    );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1200,
-        margin: "30px auto",
-        padding: 20,
-        background: "#f5f5f5",
-        minHeight: "100vh",
-      }}
-    >
-      <Toast
-        show={toast.show}
-        type={toast.type}
-        message={toast.message}
-        onClose={() =>
-          setToast((prev) => ({
-            ...prev,
-            show: false,
-          }))
-        }
-      />
+    <div style={{ marginTop: 30 }}>
+      <h2>Products</h2>
 
-      <h1>Souq Pi Admin Panel</h1>
-
-      <ProductForm
-        adminSecret={adminSecret}
-        onAdded={() => {
-          loadProducts();
-
-          setToast({
-            show: true,
-            type: "success",
-            message: "✅ Product added successfully",
-          });
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+          gap: 20,
         }}
-      />
+      >
+        {products.map((product) => (
+          <div
+            key={product.productId}
+            style={{
+              border: "1px solid #ddd",
+              borderRadius: 10,
+              padding: 15,
+              background: "#fff",
+            }}
+          >
+            {product.images?.length > 0 && (
+              <img
+                src={product.images[0]}
+                alt={product.name}
+                style={{
+                  width: "100%",
+                  height: 180,
+                  objectFit: "cover",
+                  borderRadius: 8,
+                  marginBottom: 10,
+                }}
+              />
+            )}
 
-      <ProductList
-        products={products}
-        adminSecret={adminSecret}
-        reloadProducts={loadProducts}
-        onEdit={(product) => {
-          setEditingProduct(product);
-          setShowEdit(true);
-        }}
-        showToast={(type, message) =>
-          setToast({
-            show: true,
-            type,
-            message,
-          })
-        }
-      />
+            <h3>{product.name}</h3>
 
-      {showEdit && (
-        <EditProductModal
-          product={editingProduct}
-          adminSecret={adminSecret}
-          onClose={() => setShowEdit(false)}
-          onSaved={() => {
-            loadProducts();
+            <p>{product.description}</p>
 
-            setShowEdit(false);
+            <h4>{product.price} PI</h4>
 
-            setToast({
-              show: true,
-              type: "success",
-              message: "✅ Product updated successfully",
-            });
-          }}
-        />
-      )}
+            <p>
+              <b>Category:</b> {product.category}
+            </p>
+
+            <p>
+              <b>Stock:</b> {product.stock}
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                marginTop: 15,
+              }}
+            >
+              <button
+                onClick={() => onEdit(product)}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: "#0984e3",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => deleteProduct(product.productId)}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  background: "#e74c3c",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
