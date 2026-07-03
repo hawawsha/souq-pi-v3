@@ -70,18 +70,14 @@ export default function EditProductModal({
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error);
+        console.error(data.error);
         setLoading(false);
         return;
       }
 
-      alert("✅ Product Updated");
-
       onSaved();
-      onClose();
     } catch (err) {
       console.error(err);
-      alert("Update failed");
     }
 
     setLoading(false);
