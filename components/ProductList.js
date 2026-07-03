@@ -28,12 +28,9 @@ export default function ProductList({
       }
 
       showToast?.("success", "✅ Product deleted");
-
       reloadProducts();
-
     } catch (err) {
       console.error(err);
-
       showToast?.("error", "Delete failed");
     }
   }
@@ -50,7 +47,6 @@ export default function ProductList({
   return (
     <div style={{ marginTop: 30 }}>
       <h2>Products</h2>
-
       <div
         style={{
           display: "grid",
@@ -81,28 +77,16 @@ export default function ProductList({
                 }}
               />
             )}
-
             <h3>{product.name}</h3>
-
             <p>{product.description}</p>
-
             <h4>{product.price} PI</h4>
-
             <p>
               <b>Category:</b> {product.category}
             </p>
-
             <p>
               <b>Stock:</b> {product.stock}
             </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                marginTop: 15,
-              }}
-            >
+            <div style={{ display: "flex", gap: 10, marginTop: 15 }}>
               <button
                 onClick={() => onEdit(product)}
                 style={{
@@ -117,7 +101,6 @@ export default function ProductList({
               >
                 Edit
               </button>
-
               <button
                 onClick={() => deleteProduct(product.productId)}
                 style={{
@@ -131,7 +114,6 @@ export default function ProductList({
                 }}
               >
                 Delete
-              </button>
               </button>
             </div>
           </div>
