@@ -4,6 +4,7 @@ import AdminLogin from "../components/AdminLogin";
 import ProductForm from "../components/ProductForm";
 import ProductList from "../components/ProductList";
 import EditProductModal from "../components/EditProductModal";
+import Toast from "../components/Toast";
 
 export default function AdminPage() {
   const [logged, setLogged] = useState(false);
@@ -12,6 +13,12 @@ export default function AdminPage() {
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
+
+  const [toast, setToast] = useState({
+    show: false,
+    type: "success",
+    message: "",
+  });
 
   async function loadProducts() {
     try {
@@ -51,11 +58,31 @@ export default function AdminPage() {
         minHeight: "100vh",
       }}
     >
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() =>
+          setToast((prev) => ({
+            ...prev,
+            show: false,
+          }))
+        }
+      />
+
       <h1>Souq Pi Admin Panel</h1>
 
       <ProductForm
         adminSecret={adminSecret}
-        onAdded={loadProducts}
+        onAdded={() => {
+          loadProducts();
+
+          setToast({
+            show: true,
+            type: "success",
+            message: "✅ Product added successfully",
+          });
+        }}
       />
 
       <ProductList
@@ -66,6 +93,13 @@ export default function AdminPage() {
           setEditingProduct(product);
           setShowEdit(true);
         }}
+        showToast={(type, message) =>
+          setToast({
+            show: true,
+            type,
+            message,
+          })
+        }
       />
 
       {showEdit && (
@@ -73,7 +107,17 @@ export default function AdminPage() {
           product={editingProduct}
           adminSecret={adminSecret}
           onClose={() => setShowEdit(false)}
-          onSaved={loadProducts}
+          onSaved={() => {
+            loadProducts();
+
+            setShowEdit(false);
+
+            setToast({
+              show: true,
+              type: "success",
+              message: "✅ Product updated successfully",
+            });
+          }}
         />
       )}
     </div>
