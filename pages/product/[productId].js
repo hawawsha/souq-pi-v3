@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function ProductDetails() {
   const router = useRouter();
@@ -10,28 +11,31 @@ export default function ProductDetails() {
 
   useEffect(() => {
     if (!productId) return;
-
-    fetch(`/api/products/${productId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setProduct(data.data);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+    loadProduct();
   }, [productId]);
+
+  async function loadProduct() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+
+      if (data.success) {
+        // تم إصلاح دالة البحث هنا لمطابقة productId مع المتغير الصحيح
+        const item = data.data.products.find(
+          (p) => String(p.productId) === String(productId)
+        );
+        setProduct(item || null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  }
 
   if (loading) {
     return (
-      <div
-        style={{
-          padding: 40,
-          textAlign: "center",
-        }}
-      >
+      <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>
         Loading...
       </div>
     );
@@ -39,13 +43,9 @@ export default function ProductDetails() {
 
   if (!product) {
     return (
-      <div
-        style={{
-          padding: 40,
-          textAlign: "center",
-        }}
-      >
-        Product not found
+      <div style={{ padding: 50, textAlign: "center" }}>
+        <h2>Product not found</h2>
+        <Link href="/">Back to Store</Link>
       </div>
     );
   }
@@ -58,25 +58,35 @@ export default function ProductDetails() {
         padding: 20,
       }}
     >
+      <Link
+        href="/"
+        style={{
+          textDecoration: "none",
+          color: "#0984e3",
+          fontWeight: "bold",
+        }}
+      >
+        ← Back to Store
+      </Link>
+
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 40,
+          marginTop: 30,
         }}
       >
         <div>
-          {product.images?.length > 0 && (
-            <img
-              src={product.images[0]}
-              alt={product.name}
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                objectFit: "cover",
-              }}
-            />
-          )}
+          <img
+            src={product.images?.length > 0 ? product.images[0] : "/no-image.png"}
+            alt={product.name}
+            style={{
+              width: "100%",
+              borderRadius: 12,
+              objectFit: "cover",
+            }}
+          />
         </div>
 
         <div>
@@ -84,8 +94,9 @@ export default function ProductDetails() {
 
           <p
             style={{
-              marginTop: 20,
-              lineHeight: 1.8,
+              fontSize: 18,
+              color: "#555",
+              lineHeight: 1.7,
             }}
           >
             {product.description}
@@ -94,7 +105,7 @@ export default function ProductDetails() {
           <h2
             style={{
               color: "#00b894",
-              marginTop: 25,
+              marginTop: 20,
             }}
           >
             {product.price} PI
@@ -105,28 +116,27 @@ export default function ProductDetails() {
           </p>
 
           <p>
-            <b>Stock:</b> {product.stock}
-          </p>
-
-          <p>
-            <b>Seller:</b>{" "}
-            {product.seller?.username || "Souq Pi"}
+            <b>Available:</b> {product.stock}
           </p>
 
           <button
             style={{
               marginTop: 30,
-              width: "100%",
-              padding: 16,
+              padding: "15px 30px",
               background: "#6c5ce7",
               color: "#fff",
               border: "none",
               borderRadius: 8,
               fontSize: 18,
+              fontWeight: "bold",
               cursor: "pointer",
+              width: "100%",
+            }}
+            onClick={() => {
+              alert("Buy with Pi سيتم ربطه بالـ Pi SDK في الخطوة التالية.");
             }}
           >
-            Buy Now
+            Buy with Pi
           </button>
         </div>
       </div>
