@@ -33,13 +33,27 @@ export default function ProductDetails() {
     setLoading(false);
   }
 
-  // تم تعديل دالة الدفع هنا فقط لتصبح متوافقة مع Pi Browser
+  // تم تحسين دالة الدفع لتنتظر تحميل الـ SDK
   async function handleBuy() {
     if (!product) return;
-    
-    // التحقق من وجود SDK
-    if (typeof window === 'undefined' || !window.Pi) {
-      alert("لم يتم تحميل نظام Pi SDK بعد، يرجى الانتظار ثانية أو إعادة تحميل الصفحة داخل Pi Browser");
+
+    // دالة انتظار تحميل الـ Pi SDK
+    const getPi = () => new Promise((resolve) => {
+      if (window.Pi) resolve(window.Pi);
+      else {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (window.Pi) { clearInterval(interval); resolve(window.Pi); }
+          if (attempts > 10) { clearInterval(interval); resolve(null); }
+        }, 500);
+      }
+    });
+
+    const Pi = await getPi();
+
+    if (!Pi) {
+      alert("فشل في الاتصال بنظام الدفع: تأكد أنك تستخدم متصفح Pi Network الرسمي.");
       return;
     }
 
@@ -50,9 +64,9 @@ export default function ProductDetails() {
         metadata: { productId: product.productId },
       };
 
-      await window.Pi.createPayment(paymentData, {
+      await Pi.createPayment(paymentData, {
         onReadyForServerApproval: (paymentId) => {
-          console.log("الدفعة جاهزة للموافقة من السيرفر:", paymentId);
+          console.log("الدفعة جاهزة للموافقة:", paymentId);
           alert("تم إنشاء طلب الدفع، جاري المعالجة...");
         },
         onReadyForServerCompletion: (paymentId, txid) => {
