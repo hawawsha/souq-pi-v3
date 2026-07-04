@@ -33,12 +33,13 @@ export default function ProductDetails() {
     setLoading(false);
   }
 
-  // دالة الدفع المدمجة بالـ Pi SDK
+  // تم تعديل دالة الدفع هنا فقط لتصبح متوافقة مع Pi Browser
   async function handleBuy() {
     if (!product) return;
-
+    
+    // التحقق من وجود SDK
     if (typeof window === 'undefined' || !window.Pi) {
-      alert("Pi SDK غير متاح حالياً، تأكد من فتح الرابط داخل Pi Browser!");
+      alert("لم يتم تحميل نظام Pi SDK بعد، يرجى الانتظار ثانية أو إعادة تحميل الصفحة داخل Pi Browser");
       return;
     }
 
@@ -51,19 +52,22 @@ export default function ProductDetails() {
 
       await window.Pi.createPayment(paymentData, {
         onReadyForServerApproval: (paymentId) => {
-          alert("الدفعة جاهزة للموافقة!");
-          console.log("Payment ID:", paymentId);
+          console.log("الدفعة جاهزة للموافقة من السيرفر:", paymentId);
+          alert("تم إنشاء طلب الدفع، جاري المعالجة...");
         },
         onReadyForServerCompletion: (paymentId, txid) => {
-          alert("تمت العملية بنجاح: " + txid);
+          console.log("تمت العملية بنجاح:", txid);
+          alert("تمت عملية الدفع بنجاح!");
         },
         onCancel: () => alert("تم إلغاء عملية الدفع"),
         onError: (error) => {
-          alert("خطأ SDK: " + (error.reason || error.message || "حدث خطأ غير معروف"));
+          console.error("خطأ في الدفع:", error);
+          alert("حدث خطأ في الدفع: " + (error.message || "يرجى المحاولة مجدداً"));
         },
       });
     } catch (err) {
-      alert("خطأ في تنفيذ الدفع: " + err.message);
+      console.error("فشل في إنشاء الطلب:", err);
+      alert("فشل في الاتصال بنظام الدفع");
     }
   }
 
