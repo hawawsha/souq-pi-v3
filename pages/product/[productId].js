@@ -1,10 +1,12 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePiNetwork } from "pi-sdk-react";
 
 export default function ProductDetails() {
   const router = useRouter();
   const { productId } = router.query;
+  const { createPayment } = usePiNetwork();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,16 +23,41 @@ export default function ProductDetails() {
       const data = await res.json();
 
       if (data.success) {
-        // تم إصلاح دالة البحث هنا لمطابقة productId مع المتغير الصحيح
         const item = data.data.products.find(
           (p) => String(p.productId) === String(productId)
         );
         setProduct(item || null);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error loading product:", err);
     }
     setLoading(false);
+  }
+
+  // دالة الدفع المدمجة بالـ Pi SDK
+  async function handleBuy() {
+    if (!product) return;
+    try {
+      const paymentData = {
+        amount: parseFloat(product.price),
+        memo: `شراء المنتج: ${product.name}`,
+        metadata: { productId: product.productId },
+      };
+
+      await createPayment(paymentData, {
+        onReadyForServerApproval: (paymentId) => {
+          console.log("الدفعة جاهزة للموافقة من السيرفر:", paymentId);
+        },
+        onReadyForServerCompletion: (paymentId, txid) => {
+          console.log("تمت العملية بنجاح:", txid);
+          alert("تمت عملية الدفع بنجاح!");
+        },
+        onCancel: () => alert("تم إلغاء عملية الدفع"),
+        onError: (error) => console.error("خطأ في الدفع:", error),
+      });
+    } catch (err) {
+      console.error("فشل في إنشاء الطلب:", err);
+    }
   }
 
   if (loading) {
@@ -79,7 +106,11 @@ export default function ProductDetails() {
       >
         <div>
           <img
-            src={product.images?.length > 0 ? product.images[0] : "/no-image.png"}
+            src={
+              product.images?.length > 0
+                ? product.images[0]
+                : "/no-image.png"
+            }
             alt={product.name}
             style={{
               width: "100%",
@@ -120,6 +151,7 @@ export default function ProductDetails() {
           </p>
 
           <button
+            onClick={handleBuy}
             style={{
               marginTop: 30,
               padding: "15px 30px",
@@ -131,9 +163,6 @@ export default function ProductDetails() {
               fontWeight: "bold",
               cursor: "pointer",
               width: "100%",
-            }}
-            onClick={() => {
-              alert("Buy with Pi سيتم ربطه بالـ Pi SDK في الخطوة التالية.");
             }}
           >
             Buy with Pi
