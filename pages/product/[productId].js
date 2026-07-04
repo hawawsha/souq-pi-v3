@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Head from "next/head";
 
 export default function ProductDetails() {
   const router = useRouter();
@@ -10,20 +9,6 @@ export default function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // دمج كود التهيئة لضمان عمل الـ SDK
-  useEffect(() => {
-    if (window.Pi) {
-      window.Pi.init({ version: '2.0', sandbox: true });
-    } else {
-      const script = document.querySelector('script[src*="pi-sdk"]');
-      if (script) {
-        script.onload = () => {
-          window.Pi?.init({ version: '2.0', sandbox: true });
-        };
-      }
-    }
-  }, []);
-
   useEffect(() => {
     if (!productId) return;
     loadProduct();
@@ -31,6 +16,7 @@ export default function ProductDetails() {
 
   async function loadProduct() {
     setLoading(true);
+
     try {
       const res = await fetch("/api/products");
       const data = await res.json();
@@ -39,53 +25,70 @@ export default function ProductDetails() {
         const item = data.data.products.find(
           (p) => String(p.productId) === String(productId)
         );
+
         setProduct(item || null);
       }
     } catch (err) {
       console.error("Error loading product:", err);
     }
+
     setLoading(false);
   }
 
   async function handleBuy() {
     if (!product) return;
-    
-    if (typeof window === 'undefined' || !window.Pi) {
-      alert("جاري تهيئة الاتصال بـ Pi، يرجى الانتظار ثانية...");
+
+    if (!window.Pi) {
+      alert("Pi SDK is not loaded.");
       return;
     }
 
     try {
       const paymentData = {
-        amount: parseFloat(product.price),
+        amount: Number(product.price),
         memo: `شراء المنتج: ${product.name}`,
-        metadata: { productId: product.productId },
+        metadata: {
+          productId: product.productId,
+        },
       };
 
       await window.Pi.createPayment(paymentData, {
-        onReadyForServerApproval: (paymentId) => {
-          console.log("الدفعة جاهزة للموافقة:", paymentId);
-          alert("تم إنشاء طلب الدفع، جاري المعالجة...");
+        onReadyForServerApproval(paymentId) {
+          console.log("Payment Ready:", paymentId);
+
+          alert("تم إنشاء عملية الدفع.");
         },
-        onReadyForServerCompletion: (paymentId, txid) => {
-          console.log("تمت العملية بنجاح:", txid);
-          alert("تمت عملية الدفع بنجاح!");
+
+        onReadyForServerCompletion(paymentId, txid) {
+          console.log(paymentId, txid);
+
+          alert("تم الدفع بنجاح.");
         },
-        onCancel: () => alert("تم إلغاء عملية الدفع"),
-        onError: (error) => {
-          console.error("خطأ في الدفع:", error);
-          alert("حدث خطأ في الدفع: " + (error.message || "يرجى المحاولة مجدداً"));
+
+        onCancel() {
+          alert("تم إلغاء عملية الدفع.");
+        },
+
+        onError(error) {
+          console.error(error);
+
+          alert("حدث خطأ أثناء الدفع.");
         },
       });
     } catch (err) {
-      console.error("فشل في إنشاء الطلب:", err);
-      alert("فشل في الاتصال بنظام الدفع");
-    }
-  }
+      console.error(err);
 
-  if (loading) {
+      alert("فشل الاتصال بخدمة الدفع.");
+    }
+  }  if (loading) {
     return (
-      <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>
+      <div
+        style={{
+          padding: 50,
+          textAlign: "center",
+          fontSize: 22,
+        }}
+      >
         Loading...
       </div>
     );
@@ -93,9 +96,15 @@ export default function ProductDetails() {
 
   if (!product) {
     return (
-      <div style={{ padding: 50, textAlign: "center" }}>
+      <div
+        style={{
+          padding: 50,
+          textAlign: "center",
+        }}
+      >
         <h2>Product not found</h2>
-        <Link href="/">Back to Store</Link>
+
+        <Link href="/">← Back to Store</Link>
       </div>
     );
   }
@@ -108,10 +117,6 @@ export default function ProductDetails() {
         padding: 20,
       }}
     >
-      <Head>
-        <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-      </Head>
-
       <Link
         href="/"
         style={{
@@ -134,7 +139,7 @@ export default function ProductDetails() {
         <div>
           <img
             src={
-              product.images?.length > 0
+              product.images?.length
                 ? product.images[0]
                 : "/no-image.png"
             }
