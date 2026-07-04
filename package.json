@@ -19,7 +19,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^8.0.0",
-    "next": "^16.1.5",
+    "next": "^16.2.10",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "stellar-sdk": "^13.3.0",
