@@ -1,12 +1,11 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePiNetwork } from "pi-sdk-react";
+import Head from "next/head";
 
 export default function ProductDetails() {
   const router = useRouter();
   const { productId } = router.query;
-  const { createPayment } = usePiNetwork();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +43,8 @@ export default function ProductDetails() {
         metadata: { productId: product.productId },
       };
 
-      await createPayment(paymentData, {
+      // تم الاستبدال ليعمل مع السكربت المباشر دون الاعتماد على المكتبة الخارجية
+      await window.Pi.createPayment(paymentData, {
         onReadyForServerApproval: (paymentId) => {
           console.log("الدفعة جاهزة للموافقة من السيرفر:", paymentId);
         },
@@ -85,6 +85,10 @@ export default function ProductDetails() {
         padding: 20,
       }}
     >
+      <Head>
+        <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+      </Head>
+
       <Link
         href="/"
         style={{
