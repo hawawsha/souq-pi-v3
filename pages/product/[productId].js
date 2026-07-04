@@ -10,6 +10,20 @@ export default function ProductDetails() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // دمج كود التهيئة لضمان عمل الـ SDK
+  useEffect(() => {
+    if (window.Pi) {
+      window.Pi.init({ version: '2.0', sandbox: true });
+    } else {
+      const script = document.querySelector('script[src*="pi-sdk"]');
+      if (script) {
+        script.onload = () => {
+          window.Pi?.init({ version: '2.0', sandbox: true });
+        };
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!productId) return;
     loadProduct();
@@ -33,27 +47,11 @@ export default function ProductDetails() {
     setLoading(false);
   }
 
-  // تم تحسين دالة الدفع لتنتظر تحميل الـ SDK
   async function handleBuy() {
     if (!product) return;
-
-    // دالة انتظار تحميل الـ Pi SDK
-    const getPi = () => new Promise((resolve) => {
-      if (window.Pi) resolve(window.Pi);
-      else {
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          if (window.Pi) { clearInterval(interval); resolve(window.Pi); }
-          if (attempts > 10) { clearInterval(interval); resolve(null); }
-        }, 500);
-      }
-    });
-
-    const Pi = await getPi();
-
-    if (!Pi) {
-      alert("فشل في الاتصال بنظام الدفع: تأكد أنك تستخدم متصفح Pi Network الرسمي.");
+    
+    if (typeof window === 'undefined' || !window.Pi) {
+      alert("جاري تهيئة الاتصال بـ Pi، يرجى الانتظار ثانية...");
       return;
     }
 
@@ -64,7 +62,7 @@ export default function ProductDetails() {
         metadata: { productId: product.productId },
       };
 
-      await Pi.createPayment(paymentData, {
+      await window.Pi.createPayment(paymentData, {
         onReadyForServerApproval: (paymentId) => {
           console.log("الدفعة جاهزة للموافقة:", paymentId);
           alert("تم إنشاء طلب الدفع، جاري المعالجة...");
