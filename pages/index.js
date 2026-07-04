@@ -1,16 +1,13 @@
 /**
  * Souq Pi - Home Page
- * Dynamic Network Support - Shows current network badge
  */
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePiPrice } from '../contexts/PiPriceContext';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { price, convertToUSD, network } = usePiPrice();
 
   useEffect(() => {
     fetchProducts();
@@ -31,31 +28,10 @@ export default function Home() {
     }
   };
 
-  const getNetworkBadgeColor = () => {
-    return network === 'mainnet' ? '#00b894' : '#fdcb6e';
-  };
-
-  const getNetworkLabel = () => {
-    return network === 'mainnet' ? 'Mainnet' : 'Testnet';
-  };
-
   return (
     <div className="container">
       <header className="header">
         <h1>Souq Pi</h1>
-
-        <div
-          className="network-badge"
-          style={{ backgroundColor: getNetworkBadgeColor() }}
-        >
-          {getNetworkLabel()}
-        </div>
-
-        {price && (
-          <div className="price-badge">
-            1 PI = ${price.toFixed(2)} USD
-          </div>
-        )}
       </header>
 
       <main className="main">
@@ -63,9 +39,7 @@ export default function Home() {
           <div className="loading">Loading products...</div>
         ) : (
           <div className="products-grid">
-
             {products.map(product => (
-
               <Link
                 key={product.productId}
                 href={`/product/${product.productId}`}
@@ -74,9 +48,7 @@ export default function Home() {
                   color: "inherit",
                 }}
               >
-
                 <div className="product-card">
-
                   {product.images?.length > 0 && (
                     <img
                       src={product.images[0]}
@@ -93,22 +65,14 @@ export default function Home() {
                     <span className="pi-price">
                       {product.price} PI
                     </span>
-
-                    <span className="usd-price">
-                      ≈ ${convertToUSD(product.price)} USD
-                    </span>
                   </div>
 
                   <div className="rating">
                     ⭐ {product.ratings?.average || 0} ({product.ratings?.count || 0} reviews)
                   </div>
-
                 </div>
-
               </Link>
-
             ))}
-
           </div>
         )}
       </main>
@@ -121,27 +85,8 @@ export default function Home() {
         }
 
         .header {
-          display: flex;
-          align-items: center;
-          gap: 20px;
           padding: 20px 0;
           border-bottom: 2px solid #eee;
-        }
-
-        .network-badge {
-          color: white;
-          padding: 5px 15px;
-          border-radius: 20px;
-          font-weight: bold;
-          text-transform: uppercase;
-          font-size: 0.85em;
-        }
-
-        .price-badge {
-          background: #0984e3;
-          color: white;
-          padding: 5px 15px;
-          border-radius: 20px;
         }
 
         .products-grid {
@@ -173,21 +118,10 @@ export default function Home() {
           margin-bottom: 15px;
         }
 
-        .price {
-          display: flex;
-          flex-direction: column;
-          margin: 10px 0;
-        }
-
         .pi-price {
           font-size: 1.5em;
           font-weight: bold;
           color: #00b894;
-        }
-
-        .usd-price {
-          color: #636e72;
-          font-size: 0.9em;
         }
 
         .loading {
