@@ -1,273 +1,141 @@
-/**
- * Souq Pi - Payment API Endpoint
- * Single Seller Version
- */
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import PiLoginButton from "../../components/PiLoginButton";
 
-import piClient from "../../lib/pi-client";
-import stellarClient from "../../lib/stellar-client";
-import { validateNetwork } from "../../lib/pi-config";
-import { Order, Balance, Notification } from "../../lib/models";
-import { connectDB } from "../../lib/db";
-import { v4 as uuidv4 } from "uuid";
-import logger from "../../lib/logger";
+export default function ProductDetails() {
+  const router = useRouter();
+  const { productId } = router.query;
 
-export default async function handler(req, res) {
-  res.setHeader("Content-Type", "application/json");
-  res.setHeader("X-Content-Type-Options", "nosniff");
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(false);
+  const [piUser, setPiUser] = useState(null);
 
-  try {
-    validateNetwork();
-  } catch (error) {
-    logger.error("Network validation failed", {
-      error: error.message,
-    });
+  useEffect(() => {
+    if (!productId) return;
+    loadProduct();
+  }, [productId]);
 
-    return res.status(500).json({
-      success: false,
-      error: "Network configuration error",
-    });
-  }
+  async function loadProduct() {
+    setLoading(true);
 
-  switch (req.method) {
-    case "POST":
-      return await createPayment(req, res);
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
 
-    case "GET":
-      return await getPaymentStatus(req, res);
+      if (data.success) {
+        const item = data.data.products.find(
+          (p) => String(p.productId) === String(productId)
+        );
 
-    default:
-      return res.status(405).json({
-        success: false,
-        error: "Method not allowed",
-      });
-  }
-}
-
-async function createPayment(req, res) {
-  try {
-    await connectDB();
-
-    const {
-      productId,
-      productName,
-      amount,
-      buyerUid,
-      buyerUsername,
-      buyerWalletAddress,
-      shippingAddress,
-    } = req.body;
-
-    if (!productId || !amount || !buyerUid) {
-      return res.status(400).json({
-        success: false,
-        error: "Missing required fields",
-      });
+        setProduct(item || null);
+      }
+    } catch (err) {
+      console.error(err);
     }
 
-    if (amount <= 0 || amount > 10000) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid amount. Must be between 0 and 10000 PI",
-      });
+    setLoading(false);
+  }
+
+  async function handleBuy() {
+    if (!product || !piUser) {
+      alert("Please login with Pi first.");
+      return;
     }
 
-    const orderId = uuidv4();
-    const network = process.env.PI_NETWORK || "testnet";
+    setBuying(true);
 
-    logger.info("Creating payment", {
-      orderId,
-      amount,
-      buyer: buyerUid,
-      seller: "Souq Pi",
-      network,
-    });
-
-    const piPayment = await piClient.createPayment({
-      payment: {
-        amount,
-        memo: `Order: ${orderId}`,
-        metadata: {
-          orderId,
-          productId,
+    try {
+      const res = await fetch("/api/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        uid: buyerUid,
-      },
-    });
-
-    const order = new Order({
-      orderId,
-
-      buyer: {
-        uid: buyerUid,
-        username: buyerUsername,
-        walletAddress: buyerWalletAddress,
-      },
-
-      seller: {
-        uid: "souq-pi",
-        username: "Souq Pi",
-      },
-
-      product: {
-        productId,
-        name: productName || "Unknown Product",
-        price: amount,
-      },
-
-      payment: {
-        paymentId: piPayment.identifier,
-        amount,
-        status: "pending",
-        network,
-      },
-
-      status: "pending_payment",
-
-      shippingAddress: shippingAddress || {},
-    });
-
-    await order.save();
-
-    await lockEscrow(
-      buyerUid,
-      orderId,
-      amount
-    );
-
-    await sendPaymentNotification(
-      buyerUid,
-      orderId,
-      amount,
-      "pending"
-    );
-
-    return res.status(201).json({
-      success: true,
-      message: "Payment created successfully",
-
-      data: {
-        orderId,
-        paymentId: piPayment.identifier,
-        amount,
-        status: "pending_payment",
-        network,
-        piPayment,
-      },
-    });
-
-  } catch (error) {
-    logger.error("Payment creation failed", {
-      error: error.message,
-    });
-
-    return res.status(500).json({
-      success: false,
-      error: "Payment creation failed",
-      message: error.message,
-    });
-  }
-}
-async function getPaymentStatus(req, res) {
-  try {
-    const { paymentId } = req.query;
-
-    if (!paymentId) {
-      return res.status(400).json({
-        success: false,
-        error: "paymentId is required",
+        body: JSON.stringify({
+          productId: product.productId,
+          productName: product.name,
+          amount: Number(product.price),
+          buyerUid: piUser.user.uid,
+          buyerUsername: piUser.user.username,
+        }),
       });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Payment failed");
+        setBuying(false);
+        return;
+      }
+
+      console.log("Payment created:", data.data);
+
+      // سيتم في الجزء الثاني تشغيل Pi.createPayment
+          await window.Pi.createPayment(
+        {
+          amount: Number(product.price),
+          memo: `Order: ${data.data.orderId}`,
+          metadata: {
+            orderId: data.data.orderId,
+            productId: product.productId,
+          },
+        },
+        {
+          onReadyForServerApproval: async (paymentId) => {
+            try {
+              await fetch("/api/pi/approve-payment", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ paymentId }),
+              });
+            } catch (err) {
+              console.error(err);
+            }
+          },
+
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            try {
+              const res = await fetch("/api/pi/complete-payment", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  paymentId,
+                  txid,
+                }),
+              });
+
+              const result = await res.json();
+
+              if (result.success) {
+                alert("✅ Payment completed successfully.");
+              } else {
+                alert(result.error || "Payment completion failed.");
+              }
+            } catch (err) {
+              console.error(err);
+              alert("Payment completion failed.");
+            }
+          },
+
+          onCancel: () => {
+            alert("Payment cancelled.");
+          },
+
+          onError: (error) => {
+            console.error(error);
+            alert("Payment failed.");
+          },
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Unable to create payment.");
     }
 
-    const payment = await piClient.getPayment(paymentId);
-
-    return res.status(200).json({
-      success: true,
-      data: {
-        paymentId: payment.identifier,
-        status: payment.status,
-        amount: payment.amount,
-        txid: payment.transaction?.txid || null,
-        network: process.env.PI_NETWORK || "testnet",
-      },
-    });
-
-  } catch (error) {
-    logger.error("Get payment status failed", {
-      error: error.message,
-    });
-
-    return res.status(500).json({
-      success: false,
-      error: "Failed to get payment status",
-    });
+    setBuying(false);
   }
-}
-
-async function lockEscrow(uid, orderId, amount) {
-  try {
-    const balance = await Balance.findOne({ uid });
-
-    if (!balance) return;
-
-    balance.escrow.totalLocked += amount;
-
-    balance.escrow.transactions.push({
-      orderId,
-      amount,
-      status: "locked",
-      createdAt: new Date(),
-    });
-
-    await balance.save();
-
-    logger.info("Escrow locked", {
-      uid,
-      orderId,
-      amount,
-    });
-
-  } catch (error) {
-    logger.error("Escrow lock failed", {
-      error: error.message,
-    });
-  }
-}
-
-async function sendPaymentNotification(
-  uid,
-  orderId,
-  amount,
-  status
-) {
-  try {
-    const notification = new Notification({
-      notificationId: uuidv4(),
-      uid,
-
-      type: "payment",
-
-      title: `Payment ${status}`,
-
-      message: `Payment of ${amount} PI for order #${orderId} is ${status}`,
-
-      data: {
-        orderId,
-        amount,
-        status,
-        createdAt: new Date(),
-      },
-    });
-
-    await notification.save();
-
-    logger.info("Payment notification created", {
-      uid,
-      orderId,
-    });
-
-  } catch (error) {
-    logger.error("Notification failed", {
-      error: error.message,
-    });
-  }
-}
