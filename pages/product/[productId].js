@@ -112,7 +112,8 @@ export default function ProductDetails() {
               },
               body: JSON.stringify({ paymentId }),
             });
-          },          onReadyForServerCompletion: async (paymentId, txid) => {
+          },
+          onReadyForServerCompletion: async (paymentId, txid) => {
             const complete = await fetch("/api/pi/complete-payment", {
               method: "POST",
               headers: {
