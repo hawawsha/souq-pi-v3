@@ -17,12 +17,27 @@ export default function ProductDetails() {
   }, [productId]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Pi) {
-      window.Pi.init({
-        version: "2.0",
-        sandbox: process.env.NEXT_PUBLIC_PI_NETWORK !== "mainnet",
-      });
+    if (typeof window === "undefined") return;
+
+    const initPi = () => {
+      if (window.Pi) {
+        window.Pi.init({
+          version: "2.0",
+          sandbox: process.env.NEXT_PUBLIC_PI_NETWORK === "testnet",
+        });
+      }
+    };
+
+    if (window.Pi) {
+      initPi();
+      return;
     }
+
+    const script = document.createElement("script");
+    script.src = "https://sdk.minepi.com/pi-sdk.js";
+    script.async = true;
+    script.onload = initPi;
+    document.body.appendChild(script);
   }, []);
 
   async function loadProduct() {
@@ -49,12 +64,10 @@ export default function ProductDetails() {
   async function handleBuy() {
     if (!product) return;
 
-  console.log("window.Pi =", window.Pi);
-
-if (!window.Pi) {
-  alert("Pi SDK is not loaded.");
-  return;
-}
+    if (!window.Pi) {
+      alert("Pi SDK is not loaded.");
+      return;
+    }
 
     setBuying(true);
 
@@ -98,16 +111,49 @@ if (!window.Pi) {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({ paymentId }),
+            });
+          },          onReadyForServerCompletion: async (paymentId, txid) => {
+            const complete = await fetch("/api/pi/complete-payment", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                paymentId,
+                txid,
+              }),
+            });
 
-                if (loading) {
+            const result = await complete.json();
+
+            if (result.success) {
+              alert("✅ Payment completed successfully.");
+            } else {
+              alert(result.error || "Payment completion failed.");
+            }
+          },
+
+          onCancel: () => {
+            alert("Payment cancelled.");
+          },
+
+          onError: (error) => {
+            console.error(error);
+            alert("Payment failed.");
+          },
+        }
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Unable to create payment.");
+    }
+
+    setBuying(false);
+  }
+
+  if (loading) {
     return (
-      <div
-        style={{
-          padding: 50,
-          textAlign: "center",
-          fontSize: 22,
-        }}
-      >
+      <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>
         Loading...
       </div>
     );
@@ -115,14 +161,8 @@ if (!window.Pi) {
 
   if (!product) {
     return (
-      <div
-        style={{
-          padding: 50,
-          textAlign: "center",
-        }}
-      >
+      <div style={{ padding: 50, textAlign: "center" }}>
         <h2>Product not found</h2>
-
         <Link href="/">← Back to Store</Link>
       </div>
     );
@@ -131,7 +171,7 @@ if (!window.Pi) {
   return (
     <>
       <Head>
-        <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+        <title>{product.name}</title>
       </Head>
 
       <div
@@ -218,7 +258,7 @@ if (!window.Pi) {
                 borderRadius: 8,
                 fontSize: 18,
                 fontWeight: "bold",
-                cursor: "pointer",
+                cursor: buying ? "not-allowed" : "pointer",
                 width: "100%",
                 opacity: buying ? 0.7 : 1,
               }}
