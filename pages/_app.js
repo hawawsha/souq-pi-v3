@@ -14,11 +14,11 @@ function MyApp({ Component, pageProps }) {
 
     script.onload = () => {
       if (window.Pi) {
-        window.Pi.init({
-          version: "2.0",
-          sandbox: process.env.NEXT_PUBLIC_PI_NETWORK !== "mainnet",
-        });
-
+        
+window.Pi.init({
+  version: "2.0",
+  sandbox: process.env.NEXT_PUBLIC_PI_NETWORK !== "mainnet",
+});
         console.log("✅ Pi SDK Loaded");
       }
     };
