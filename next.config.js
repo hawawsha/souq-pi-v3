@@ -31,10 +31,10 @@ const nextConfig = {
   },
 
   env: {
-    PI_NETWORK: process.env.PI_NETWORK || "testnet",
-    PI_API_BASE_URL: process.env.PI_API_BASE_URL,
-    PI_APP_ID: process.env.PI_APP_ID,
-  },
+  NEXT_PUBLIC_PI_NETWORK: process.env.PI_NETWORK || "testnet",
+  NEXT_PUBLIC_PI_APP_ID: process.env.PI_APP_ID,
+  PI_API_BASE_URL: process.env.PI_API_BASE_URL,
+},
 
   images: {
     remotePatterns: [
