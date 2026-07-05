@@ -49,10 +49,12 @@ export default function ProductDetails() {
   async function handleBuy() {
     if (!product) return;
 
-    if (!window.Pi) {
-      alert("Pi SDK is not loaded.");
-      return;
-    }
+  console.log("window.Pi =", window.Pi);
+
+if (!window.Pi) {
+  alert("Pi SDK is not loaded.");
+  return;
+}
 
     setBuying(true);
 
