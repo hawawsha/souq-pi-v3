@@ -213,7 +213,7 @@ If you encounter issues:
 ## Migration Timeline
 
 | Date | Milestone |
-|------|-----------|
+|------|----------|
 | June 6, 2026 | v2.1.0 Released |
 | - | All production deployments recommended to upgrade |
 | - | Support for v2.0.x ends 90 days after v2.1.0 release |
