@@ -142,7 +142,7 @@ async function createPayment(req, res) {
 
       data: {
         orderId,
-        paymentId: piPayment.identifier,
+        paymentId: null,
         amount,
         status: "pending_payment",
         network,
