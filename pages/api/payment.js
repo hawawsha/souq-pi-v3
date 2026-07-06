@@ -82,64 +82,46 @@ async function createPayment(req, res) {
       network,
     });
 
-  const piPayment = {
-  identifier: orderId,
-  status: "pending",
-};
+    const piPayment = {
+      identifier: orderId,
+      status: "pending",
+    };
 
     const order = new Order({
       orderId,
-
       buyer: {
         uid: buyerUid,
         username: buyerUsername,
         walletAddress: buyerWalletAddress,
       },
-
       seller: {
         uid: "souq-pi",
         username: "Souq Pi",
       },
-
       product: {
-        payment: {
-  paymentId: null,
-  amount,
-  status: "pending",
-  network,
-},
-
+        productId,
+        productName,
+        amount,
+      },
       payment: {
         paymentId: piPayment.identifier,
         amount,
         status: "pending",
         network,
       },
-
       status: "pending_payment",
-
       shippingAddress: shippingAddress || {},
     });
 
     await order.save();
 
-    await lockEscrow(
-      buyerUid,
-      orderId,
-      amount
-    );
+    await lockEscrow(buyerUid, orderId, amount);
 
-    await sendPaymentNotification(
-      buyerUid,
-      orderId,
-      amount,
-      "pending"
-    );
+    await sendPaymentNotification(buyerUid, orderId, amount, "pending");
 
     return res.status(201).json({
       success: true,
       message: "Payment created successfully",
-
       data: {
         orderId,
         paymentId: null,
@@ -149,7 +131,6 @@ async function createPayment(req, res) {
         piPayment,
       },
     });
-
   } catch (error) {
     logger.error("Payment creation failed", {
       error: error.message,
@@ -162,6 +143,7 @@ async function createPayment(req, res) {
     });
   }
 }
+
 async function getPaymentStatus(req, res) {
   try {
     const { paymentId } = req.query;
@@ -185,7 +167,6 @@ async function getPaymentStatus(req, res) {
         network: process.env.PI_NETWORK || "testnet",
       },
     });
-
   } catch (error) {
     logger.error("Get payment status failed", {
       error: error.message,
@@ -220,7 +201,6 @@ async function lockEscrow(uid, orderId, amount) {
       orderId,
       amount,
     });
-
   } catch (error) {
     logger.error("Escrow lock failed", {
       error: error.message,
@@ -228,23 +208,14 @@ async function lockEscrow(uid, orderId, amount) {
   }
 }
 
-async function sendPaymentNotification(
-  uid,
-  orderId,
-  amount,
-  status
-) {
+async function sendPaymentNotification(uid, orderId, amount, status) {
   try {
     const notification = new Notification({
       notificationId: uuidv4(),
       uid,
-
       type: "payment",
-
       title: `Payment ${status}`,
-
       message: `Payment of ${amount} PI for order #${orderId} is ${status}`,
-
       data: {
         orderId,
         amount,
@@ -259,7 +230,6 @@ async function sendPaymentNotification(
       uid,
       orderId,
     });
-
   } catch (error) {
     logger.error("Notification failed", {
       error: error.message,
