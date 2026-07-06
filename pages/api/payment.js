@@ -102,10 +102,12 @@ async function createPayment(req, res) {
       },
 
       product: {
-        productId,
-        name: productName || "Unknown Product",
-        price: amount,
-      },
+        payment: {
+  paymentId: null,
+  amount,
+  status: "pending",
+  network,
+},
 
       payment: {
         paymentId: piPayment.identifier,
