@@ -100,8 +100,8 @@ async function createPayment(req, res) {
       },
       product: {
         productId,
-        productName,
-        amount,
+        name: productName,
+        price: amount,
       },
       payment: {
         paymentId: piPayment.identifier,
