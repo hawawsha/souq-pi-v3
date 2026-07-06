@@ -82,17 +82,10 @@ async function createPayment(req, res) {
       network,
     });
 
-    const piPayment = await piClient.createPayment({
-      payment: {
-        amount,
-        memo: `Order: ${orderId}`,
-        metadata: {
-          orderId,
-          productId,
-        },
-        uid: buyerUid,
-      },
-    });
+  const piPayment = {
+  identifier: orderId,
+  status: "pending",
+};
 
     const order = new Order({
       orderId,
