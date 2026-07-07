@@ -11,6 +11,8 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
 
+  const [piUser, setPiUser] = useState(null);
+
   useEffect(() => {
     if (!productId) return;
     loadProduct();
@@ -19,12 +21,24 @@ export default function ProductDetails() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const initPi = () => {
-      if (window.Pi) {
-        window.Pi.init({
-          version: "2.0",
-          sandbox: process.env.NEXT_PUBLIC_PI_NETWORK === "testnet",
-        });
+    const initPi = async () => {
+      if (!window.Pi) return;
+
+      window.Pi.init({
+        version: "2.0",
+        sandbox:
+          (process.env.NEXT_PUBLIC_PI_NETWORK || "testnet") === "testnet",
+      });
+
+      try {
+        const auth = await window.Pi.authenticate(
+          ["payments"],
+          () => {}
+        );
+
+        setPiUser(auth);
+      } catch (err) {
+        console.error(err);
       }
     };
 
@@ -37,6 +51,7 @@ export default function ProductDetails() {
     script.src = "https://sdk.minepi.com/pi-sdk.js";
     script.async = true;
     script.onload = initPi;
+
     document.body.appendChild(script);
   }, []);
 
@@ -65,60 +80,86 @@ export default function ProductDetails() {
     if (!product) return;
 
     if (!window.Pi) {
-      alert("Pi SDK is not loaded.");
+      alert("Pi SDK not loaded.");
+      return;
+    }
+
+    if (!piUser) {
+      alert("Please login with Pi first.");
       return;
     }
 
     setBuying(true);
 
     try {
-      const create = await fetch("/api/payment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.productId,
-          productName: product.name,
-          amount: Number(product.price),
-          buyerUid: "demo-user",
-          buyerUsername: "demo-user",
-        }),
-      });
-
-      const payment = await create.json();
-
-      if (!payment.success) {
-        alert(payment.error || "Payment creation failed");
-        setBuying(false);
-        return;
-      }
 
       await window.Pi.createPayment(
         {
           amount: Number(product.price),
-          memo: `Order ${payment.data.orderId}`,
+
+          memo: `Buy ${product.name}`,
+
           metadata: {
-            orderId: payment.data.orderId,
             productId: product.productId,
+            productName: product.name,
           },
         },
+
         {
           onReadyForServerApproval: async (paymentId) => {
+
+            const response = await fetch("/api/payment", {
+              method: "POST",
+
+              headers: {
+                "Content-Type": "application/json",
+              },
+
+              body: JSON.stringify({
+                paymentId,
+
+                productId: product.productId,
+
+                productName: product.name,
+
+                amount: Number(product.price),
+
+                buyerUid: piUser.user.uid,
+
+                buyerUsername: piUser.user.username,
+
+                accessToken: piUser.accessToken,
+              }),
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+              alert(result.error || "Server error");
+              return;
+            }
+
             await fetch("/api/pi/approve-payment", {
               method: "POST",
+
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ paymentId }),
+
+              body: JSON.stringify({
+                paymentId,
+              }),
             });
           },
-          onReadyForServerCompletion: async (paymentId, txid) => {
+                    onReadyForServerCompletion: async (paymentId, txid) => {
+
             const complete = await fetch("/api/pi/complete-payment", {
               method: "POST",
+
               headers: {
                 "Content-Type": "application/json",
               },
+
               body: JSON.stringify({
                 paymentId,
                 txid,
@@ -140,10 +181,11 @@ export default function ProductDetails() {
 
           onError: (error) => {
             console.error(error);
-            alert("Payment failed.");
+            alert(error?.message || "Payment failed.");
           },
         }
       );
+
     } catch (err) {
       console.error(err);
       alert("Unable to create payment.");
