@@ -38,7 +38,6 @@ export default function ProductDetails() {
 
         setPiUser(auth.user);
         console.log("Pi User:", auth.user);
-
       } catch (err) {
         console.error(err);
       }
@@ -54,7 +53,6 @@ export default function ProductDetails() {
     script.async = true;
     script.onload = initPi;
     document.body.appendChild(script);
-
   }, []);
 
   async function loadProduct() {
@@ -71,7 +69,6 @@ export default function ProductDetails() {
 
         setProduct(item || null);
       }
-
     } catch (err) {
       console.error(err);
     }
@@ -80,7 +77,6 @@ export default function ProductDetails() {
   }
 
   async function handleBuy() {
-
     if (!product) return;
 
     if (!window.Pi) {
@@ -96,7 +92,6 @@ export default function ProductDetails() {
     setBuying(true);
 
     try {
-
       const create = await fetch("/api/payment", {
         method: "POST",
         headers: {
@@ -122,7 +117,7 @@ export default function ProductDetails() {
         setBuying(false);
         return;
       }
-            await window.Pi.createPayment(
+      await window.Pi.createPayment(
         {
           amount: Number(product.price),
           memo: `Order ${result.data.orderId}`,
@@ -133,7 +128,6 @@ export default function ProductDetails() {
         },
         {
           onReadyForServerApproval: async (paymentId) => {
-
             await fetch("/api/pi/approve-payment", {
               method: "POST",
               headers: {
@@ -144,11 +138,9 @@ export default function ProductDetails() {
                 orderId: result.data.orderId,
               }),
             });
-
           },
 
           onReadyForServerCompletion: async (paymentId, txid) => {
-
             const complete = await fetch("/api/pi/complete-payment", {
               method: "POST",
               headers: {
@@ -168,7 +160,6 @@ export default function ProductDetails() {
             } else {
               alert(json.error || "Payment completion failed.");
             }
-
           },
 
           onCancel: () => {
@@ -181,12 +172,9 @@ export default function ProductDetails() {
           },
         }
       );
-
     } catch (err) {
-
       console.error(err);
       alert("Unable to create payment.");
-
     }
 
     setBuying(false);
@@ -205,9 +193,7 @@ export default function ProductDetails() {
       <div style={{ padding: 50, textAlign: "center" }}>
         <h2>Product not found</h2>
 
-        <Link href="/">
-          ← Back to Store
-        </Link>
+        <Link href="/">← Back to Store</Link>
       </div>
     );
   }
@@ -245,11 +231,7 @@ export default function ProductDetails() {
         >
           <div>
             <img
-              src={
-                product.images?.length
-                  ? product.images[0]
-                  : "/no-image.png"
-              }
+              src={product.images?.length ? product.images[0] : "/no-image.png"}
               alt={product.name}
               style={{
                 width: "100%",
