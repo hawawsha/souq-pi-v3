@@ -45,7 +45,8 @@ export default async function handler(req, res) {
     // Update order
     order.payment.status = "completed";
     order.payment.txid = txid;
-    order.status = "paid";
+    // تم تصحيح الحالة لتتوافق مع الـ Schema المسموح به
+    order.status = "payment_received";
 
     await order.save();
 
