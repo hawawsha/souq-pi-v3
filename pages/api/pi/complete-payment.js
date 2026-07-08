@@ -39,18 +39,26 @@ export default async function handler(req, res) {
       });
     }
 
-    // Complete payment on Pi Network
-    await piClient.completePayment(paymentId);
+    // التحقق لمنع إرسال طلب تكراري إذا كانت العملية مكتملة بالفعل
+    if (order.payment.status === "completed") {
+      return res.status(200).json({
+        success: true,
+        message: "Order already completed",
+        orderId: order.orderId,
+      });
+    }
 
-    // Update order
+    // إتمام الدفع على خادم Pi Network مع تمرير الـ txid المصحح
+    await piClient.completePayment(paymentId, txid);
+
+    // تحديث حالة الطلب
     order.payment.status = "completed";
     order.payment.txid = txid;
-    // تم تصحيح الحالة لتتوافق مع الـ Schema المسموح به
     order.status = "payment_received";
 
     await order.save();
 
-    // Update buyer balance if exists
+    // تحديث رصيد المشتري إذا وجد
     const balance = await Balance.findOne({
       uid: order.buyer.uid,
     });
@@ -60,11 +68,10 @@ export default async function handler(req, res) {
         0,
         balance.escrow.totalLocked - order.payment.amount
       );
-
       await balance.save();
     }
 
-    // Notification
+    // إنشاء إشعار للمستخدم
     await Notification.create({
       notificationId: uuidv4(),
       uid: order.buyer.uid,
@@ -78,7 +85,7 @@ export default async function handler(req, res) {
       },
     });
 
-    logger.info("Payment completed", {
+    logger.info("Payment completed successfully", {
       paymentId,
       txid,
       orderId: order.orderId,
@@ -91,7 +98,6 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-
     logger.error("Complete payment failed", {
       error: error.message,
     });
@@ -100,6 +106,5 @@ export default async function handler(req, res) {
       success: false,
       error: error.message,
     });
-
   }
 }
