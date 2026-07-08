@@ -1,6 +1,6 @@
 /**
- * Souq Pi - Payment API Endpoint
- * ملف معالج عمليات الدفع - كامل دون نقصان
+ * Souq Pi - Payment API Endpoint (FIXED)
+ * Server only handles orders (NO Pi createPayment here)
  */
 
 import { v4 as uuidv4 } from "uuid";
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 }
 
 /**
- * CREATE ORDER AND INITIALIZE PI PAYMENT
+ * CREATE ORDER ONLY (NO PI SDK CALL HERE)
  */
 async function createPayment(req, res) {
   try {
@@ -56,64 +56,64 @@ async function createPayment(req, res) {
     } = req.body;
 
     if (!productId || !amount || !buyerUid) {
-      logger.error("Missing required fields", { body: req.body });
       return res.status(400).json({
         success: false,
-        error: "Missing required fields (productId, amount, or buyerUid)",
+        error: "Missing required fields",
       });
     }
 
     const orderId = uuidv4();
     const network = process.env.PI_NETWORK || "testnet";
 
-    // 1. إنشاء الطلب في قاعدة البيانات
     const order = new Order({
       orderId,
+
       buyer: {
         uid: buyerUid,
         username: buyerUsername,
         walletAddress: buyerWalletAddress,
       },
+
       seller: {
         uid: "souq-pi",
         username: "Souq Pi",
       },
+
       product: {
         productId,
         name: productName,
         price: amount,
       },
+
       payment: {
         paymentId: null,
         amount,
         status: "pending",
         network,
       },
+
       status: "pending_payment",
+
       shippingAddress: shippingAddress || {},
     });
 
     await order.save();
 
-    // 2. التواصل مع Pi Network لإنشاء المعاملة
     const piPayment = await piClient.createPayment({
       amount: amount,
       memo: `Payment for ${productName}`,
       metadata: { orderId, buyerUid },
     });
-
-    // 3. تحديث الطلب بالـ paymentId
     order.payment.paymentId = piPayment.identifier;
     await order.save();
 
-    logger.info("Order and Pi payment successfully created", { orderId, paymentId: piPayment.identifier });
+    logger.info("Order created", { orderId, amount });
 
     return res.status(201).json({
       success: true,
       message: "Order created successfully",
       data: {
         orderId,
-        paymentId: piPayment.identifier,
         amount,
         network,
       },
@@ -132,7 +132,7 @@ async function createPayment(req, res) {
 }
 
 /**
- * STATUS CHECK
+ * STATUS CHECK (OPTIONAL)
  */
 async function getPaymentStatus(req, res) {
   try {
