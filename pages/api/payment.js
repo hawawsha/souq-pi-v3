@@ -1,5 +1,6 @@
 /**
- * Souq Pi - Payment API Endpoint (FIXED & CONNECTED)
+ * Souq Pi - Payment API Endpoint
+ * ملف معالج عمليات الدفع - كامل دون نقصان
  */
 
 import { v4 as uuidv4 } from "uuid";
@@ -55,9 +56,10 @@ async function createPayment(req, res) {
     } = req.body;
 
     if (!productId || !amount || !buyerUid) {
+      logger.error("Missing required fields", { body: req.body });
       return res.status(400).json({
         success: false,
-        error: "Missing required fields",
+        error: "Missing required fields (productId, amount, or buyerUid)",
       });
     }
 
@@ -82,7 +84,7 @@ async function createPayment(req, res) {
         price: amount,
       },
       payment: {
-        paymentId: null, // سيتم تحديثه لاحقاً
+        paymentId: null,
         amount,
         status: "pending",
         network,
@@ -93,18 +95,18 @@ async function createPayment(req, res) {
 
     await order.save();
 
-    // 2. التواصل مع شبكة Pi لإنشاء المعاملة
+    // 2. التواصل مع Pi Network لإنشاء المعاملة
     const piPayment = await piClient.createPayment({
       amount: amount,
       memo: `Payment for ${productName}`,
-      metadata: { orderId },
+      metadata: { orderId, buyerUid },
     });
 
-    // 3. تحديث الطلب بالـ paymentId المستلم من Pi
+    // 3. تحديث الطلب بالـ paymentId
     order.payment.paymentId = piPayment.identifier;
     await order.save();
 
-    logger.info("Order and Pi payment created", { orderId, paymentId: piPayment.identifier });
+    logger.info("Order and Pi payment successfully created", { orderId, paymentId: piPayment.identifier });
 
     return res.status(201).json({
       success: true,
