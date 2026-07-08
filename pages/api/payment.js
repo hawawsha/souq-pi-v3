@@ -8,7 +8,6 @@ import { Order, Balance, Notification } from "../../lib/models";
 import { connectDB } from "../../lib/db";
 import { validateNetwork } from "../../lib/pi-config";
 import logger from "../../lib/logger";
-import piClient from "../../lib/pi-client";
 
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json");
@@ -97,14 +96,6 @@ async function createPayment(req, res) {
       shippingAddress: shippingAddress || {},
     });
 
-    await order.save();
-
-    const piPayment = await piClient.createPayment({
-      amount: amount,
-      memo: `Payment for ${productName}`,
-      metadata: { orderId, buyerUid },
-    });
-    order.payment.paymentId = piPayment.identifier;
     await order.save();
 
     logger.info("Order created", { orderId, amount });
