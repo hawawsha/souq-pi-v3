@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     }
 
     // Complete payment on Pi Network
-    await piClient.completePayment(paymentId, txid);
+    await piClient.completePayment(paymentId);
 
     // Update order
     order.payment.status = "completed";
