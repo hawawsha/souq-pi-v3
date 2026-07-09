@@ -53,6 +53,8 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       paymentId,
+      // تم إضافة الرد الصريح للحالة كما طلبت
+      status: 200 
     });
 
   } catch (error) {
@@ -64,6 +66,8 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       error: error.message,
+      // حالة الخطأ في حال حدوثه
+      status: 500 
     });
 
   }
