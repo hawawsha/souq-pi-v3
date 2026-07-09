@@ -34,8 +34,25 @@ export default function ProductDetails() {
       try {
         const auth = await window.Pi.authenticate(
           ["payments", "username"],
-          (payment) => {
-            console.log("Incomplete payment:", payment);
+          async (payment) => {
+            // التعديل الذي طلبته: إكمال الدفعة المعلقة تلقائياً فوراً
+            console.log("Found incomplete payment, attempting to complete:", payment);
+            try {
+              const res = await fetch("/api/pi/complete-payment", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  paymentId: payment.identifier,
+                  txid: payment.transaction?.txid || ""
+                })
+              });
+              const json = await res.json();
+              if (json.success) {
+                alert("✅ Pending payment completed successfully.");
+              }
+            } catch (err) {
+              console.error("Auto-completion failed:", err);
+            }
           }
         );
 
@@ -61,16 +78,13 @@ export default function ProductDetails() {
 
   async function loadProduct() {
     setLoading(true);
-
     try {
       const res = await fetch("/api/products");
       const data = await res.json();
-
       if (data.success) {
         const item = data.data.products.find(
           (p) => String(p.productId) === String(productId)
         );
-
         setProduct(item || null);
       } else {
         alert("Error loading product: " + data.error);
@@ -79,18 +93,15 @@ export default function ProductDetails() {
       console.error(err);
       alert("Failed to fetch products.");
     }
-
     setLoading(false);
   }
 
   async function handleBuy() {
     if (!product) return;
-
     if (!window.Pi) {
       alert("Pi SDK not loaded");
       return;
     }
-
     if (!piUser) {
       alert("Please login with Pi.");
       return;
@@ -101,9 +112,7 @@ export default function ProductDetails() {
     try {
       const create = await fetch("/api/payment", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product.productId,
           productName: product.name,
@@ -115,7 +124,6 @@ export default function ProductDetails() {
       });
 
       const result = await create.json();
-
       if (!result.success) {
         alert("Server Error: " + result.error);
         setBuying(false);
@@ -166,13 +174,7 @@ export default function ProductDetails() {
     }
   }
 
-  if (loading) {
-    return (
-      <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>
-        Loading...
-      </div>
-    );
-  }
+  if (loading) return <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>Loading...</div>;
 
   if (!product) {
     return (
@@ -185,20 +187,12 @@ export default function ProductDetails() {
 
   return (
     <>
-      <Head>
-        <title>{product.name}</title>
-      </Head>
+      <Head><title>{product.name}</title></Head>
       <div style={{ maxWidth: 1100, margin: "40px auto", padding: 20 }}>
-        <Link href="/" style={{ textDecoration: "none", color: "#0984e3", fontWeight: "bold" }}>
-          ← Back to Store
-        </Link>
+        <Link href="/" style={{ textDecoration: "none", color: "#0984e3", fontWeight: "bold" }}>← Back to Store</Link>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, marginTop: 30 }}>
           <div>
-            <img
-              src={product.images?.length ? product.images[0] : "/no-image.png"}
-              alt={product.name}
-              style={{ width: "100%", borderRadius: 12, objectFit: "cover" }}
-            />
+            <img src={product.images?.length ? product.images[0] : "/no-image.png"} alt={product.name} style={{ width: "100%", borderRadius: 12, objectFit: "cover" }} />
           </div>
           <div>
             <h1>{product.name}</h1>
@@ -207,18 +201,11 @@ export default function ProductDetails() {
             <p><b>Category:</b> {product.category}</p>
             <p><b>Available:</b> {product.stock}</p>
             {piUser && <p style={{ color: "green", fontWeight: "bold" }}>Logged in as: {piUser.username}</p>}
-            <button
-              onClick={handleBuy}
-              disabled={buying}
-              style={{
-                marginTop: 30, padding: "15px 30px", background: "#6c5ce7",
-                color: "#fff", border: "none", borderRadius: 8, fontSize: 18,
-                fontWeight: "bold", cursor: buying ? "not-allowed" : "pointer",
-                width: "100%", opacity: buying ? 0.7 : 1
-              }}
-            >
-              {buying ? "Processing..." : "Buy with Pi"}
-            </button>
+            <button onClick={handleBuy} disabled={buying} style={{
+              marginTop: 30, padding: "15px 30px", background: "#6c5ce7", color: "#fff",
+              border: "none", borderRadius: 8, fontSize: 18, fontWeight: "bold",
+              cursor: buying ? "not-allowed" : "pointer", width: "100%", opacity: buying ? 0.7 : 1
+            }}>{buying ? "Processing..." : "Buy with Pi"}</button>
           </div>
         </div>
       </div>
