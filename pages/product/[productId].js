@@ -21,7 +21,10 @@ export default function ProductDetails() {
     if (typeof window === "undefined") return;
 
     const initPi = async () => {
-      if (!window.Pi) return;
+      if (!window.Pi) {
+        alert("Pi SDK object not found.");
+        return;
+      }
 
       window.Pi.init({
         version: "2.0",
@@ -40,6 +43,7 @@ export default function ProductDetails() {
         console.log("Pi User:", auth.user);
       } catch (err) {
         console.error(err);
+        alert("Pi Authentication Error: " + err.message);
       }
     };
 
@@ -68,15 +72,17 @@ export default function ProductDetails() {
         );
 
         setProduct(item || null);
+      } else {
+        alert("Error loading product: " + data.error);
       }
     } catch (err) {
       console.error(err);
+      alert("Failed to fetch products.");
     }
 
     setLoading(false);
   }
 
-  // --- دالة الشراء كما طلبتها بالضبط مع الحفاظ على كل الأسطر والهيكلية ---
   async function handleBuy() {
     if (!product) return;
 
@@ -111,7 +117,7 @@ export default function ProductDetails() {
       const result = await create.json();
 
       if (!result.success) {
-        alert(result.error);
+        alert("Server Error: " + result.error);
         setBuying(false);
         return;
       }
@@ -146,21 +152,20 @@ export default function ProductDetails() {
               alert("✅ Payment completed successfully.");
               router.push("/");
             } else {
-              alert(json.error || "Payment completion failed.");
+              alert("Completion Error: " + json.error);
             }
           },
-          onCancel: () => alert("Payment cancelled."),
-          onError: (error) => { console.error(error); alert("Payment failed."); },
+          onCancel: () => { alert("Payment cancelled."); setBuying(false); },
+          onError: (error) => { console.error(error); alert("Pi Payment Error: " + error); setBuying(false); },
         }
       );
     } catch (err) {
       console.error(err);
-      alert("Unable to create payment.");
+      alert("System Error: " + err.message);
+      setBuying(false);
     }
-    setBuying(false);
   }
 
-  // --- العودة لشكل الصفحة الأصلي والكامل كما كان تماماً ---
   if (loading) {
     return (
       <div style={{ padding: 50, textAlign: "center", fontSize: 22 }}>
