@@ -128,17 +128,23 @@ export default function ProductDetails() {
         },
         {
           onReadyForServerApproval: async (paymentId) => {
-            await fetch("/api/pi/approve-payment", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                paymentId,
-                orderId: result.data.orderId,
-              }),
-            });
-          },
+  const res = await fetch("/api/pi/approve-payment", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      paymentId,
+      orderId: result.data.orderId,
+    }),
+  });
+
+  const json = await res.json();
+
+  if (!json.success) {
+    throw new Error(json.error || "Approve payment failed");
+  }
+},
 
           onReadyForServerCompletion: async (paymentId, txid) => {
             const complete = await fetch("/api/pi/complete-payment", {
