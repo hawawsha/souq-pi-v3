@@ -17,7 +17,7 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const order = await Order.findOne({ paymentId });
+    const order = await Order.findOne({ "payment.paymentId": paymentId });
 
     if (!order) {
       console.log("HTTP Status: 404 - Order not found for paymentId:", paymentId);
@@ -29,9 +29,9 @@ export async function POST(request) {
 
     const completedPayment = await piClient.completePayment(paymentId, txid);
 
+    order.payment.status = "completed";
+    order.payment.txid = txid;
     order.status = "completed";
-    order.txid = txid;
-    order.completedAt = new Date();
 
     await order.save();
 
