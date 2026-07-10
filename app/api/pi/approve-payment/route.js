@@ -5,22 +5,22 @@ import piClient from "@/lib/pi/config";
 
 export async function POST(request) {
   try {
-    const { paymentId } = await request.json();
+    const { paymentId, orderId } = await request.json();
 
-    if (!paymentId) {
-      console.log("HTTP Status: 400 - Missing paymentId");
+    if (!paymentId || !orderId) {
+      console.log("HTTP Status: 400 - Missing paymentId or orderId");
       return NextResponse.json(
-        { success: false, message: "paymentId مطلوب" },
+        { success: false, message: "paymentId و orderId مطلوبان" },
         { status: 400 }
       );
     }
 
     await dbConnect();
 
-    const order = await Order.findOne({ paymentId });
+    const order = await Order.findOne({ orderId });
 
     if (!order) {
-      console.log("HTTP Status: 404 - Order not found for paymentId:", paymentId);
+      console.log("HTTP Status: 404 - Order not found:", orderId);
       return NextResponse.json(
         { success: false, message: "لم يتم العثور على الطلب" },
         { status: 404 }
@@ -29,8 +29,9 @@ export async function POST(request) {
 
     const approvedPayment = await piClient.approvePayment(paymentId);
 
+    order.payment.paymentId = paymentId;
+    order.payment.status = "approved";
     order.status = "approved";
-    order.approvedAt = new Date();
 
     await order.save();
 
