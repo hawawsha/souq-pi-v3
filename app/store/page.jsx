@@ -7,6 +7,7 @@ export default function StorePage() {
   const [message, setMessage] = useState("");
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [piUser, setPiUser] = useState(null);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -31,6 +32,31 @@ export default function StorePage() {
     fetchProducts();
   }, []);
 
+  async function authenticateWithPi() {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined" || !window.Pi) {
+        reject(new Error("Pi SDK غير متوفر"));
+        return;
+      }
+
+      const onIncompletePaymentFound = (payment) => {
+        console.log("Incomplete payment found:", payment);
+        // في حال وُجد دفع سابق لم يكتمل، يمكن استكماله عبر complete-payment هنا لاحقاً
+      };
+
+      window.Pi.authenticate(["payments"], onIncompletePaymentFound)
+        .then((auth) => {
+          console.log("Pi authenticate success:", auth.user.uid);
+          setPiUser(auth.user);
+          resolve(auth);
+        })
+        .catch((error) => {
+          console.log("Pi authenticate error:", error);
+          reject(error);
+        });
+    });
+  }
+
   async function handleBuy(product) {
     try {
       setLoadingProductId(product._id);
@@ -42,13 +68,25 @@ export default function StorePage() {
         return;
       }
 
+      // 0) تسجيل الدخول وطلب صلاحية payments قبل أي عملية شراء
+      let currentUser = piUser;
+      if (!currentUser) {
+        try {
+          const auth = await authenticateWithPi();
+          currentUser = auth.user;
+        } catch (authError) {
+          setMessage("فشل تسجيل الدخول عبر Pi Network. تأكد من الموافقة على الصلاحيات المطلوبة.");
+          return;
+        }
+      }
+
       // 1) إنشاء الطلب في MongoDB
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: product._id,
-          userUid: window.Pi?.currentUser?.uid || "GUEST_UID",
+          userUid: currentUser.uid,
         }),
       });
 
