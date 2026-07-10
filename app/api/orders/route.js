@@ -6,19 +6,20 @@ import Product from "@/models/Product";
 
 export async function POST(request) {
   try {
-    const { productId, userUid } = await request.json();
+    const { productId, buyerUid, buyerUsername } = await request.json();
 
-    if (!productId || !userUid) {
-      console.log("HTTP Status: 400 - Missing productId or userUid");
+    if (!productId || !buyerUid) {
+      console.log("HTTP Status: 400 - Missing productId or buyerUid");
       return NextResponse.json(
-        { success: false, message: "productId و userUid مطلوبان" },
+        { success: false, message: "productId و buyerUid مطلوبان" },
         { status: 400 }
       );
     }
 
     await dbConnect();
 
-    const product = await Product.findById(productId);
+    // productId هنا هو الـ UUID المخزّن في حقل product.productId، وليس الـ Mongo _id
+    const product = await Product.findOne({ productId });
 
     if (!product) {
       console.log("HTTP Status: 404 - Product not found:", productId);
@@ -29,14 +30,27 @@ export async function POST(request) {
     }
 
     const order = await Order.create({
-      productId: product._id,
-      productName: product.name,
-      amount: product.price,
-      userUid,
+      buyer: {
+        uid: buyerUid,
+        username: buyerUsername || buyerUid,
+      },
+      seller: {
+        uid: product.seller?.uid || "souq-pi",
+        username: product.seller?.username || "Souq Pi",
+      },
+      product: {
+        productId: product.productId,
+        name: product.name,
+        price: product.price,
+      },
+      payment: {
+        amount: product.price,
+        status: "pending",
+      },
       status: "pending",
     });
 
-    console.log("HTTP Status: 201 - Order created:", order._id.toString());
+    console.log("HTTP Status: 201 - Order created:", order.orderId);
     return NextResponse.json(
       { success: true, message: "تم إنشاء الطلب بنجاح", data: order },
       { status: 201 }
