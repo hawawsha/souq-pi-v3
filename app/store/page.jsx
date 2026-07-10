@@ -1,21 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function StorePage() {
-  const [loading, setLoading] = useState(false);
+  const [loadingProductId, setLoadingProductId] = useState(null);
   const [message, setMessage] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // مثال مبدئي لمنتج - في الواقع سيأتي من قاعدة البيانات عبر fetch("/api/products")
-  const product = {
-    _id: "PRODUCT_ID_HERE",
-    name: "منتج تجريبي",
-    price: 1, // بعملة Pi
-  };
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("/api/products");
+        console.log("HTTP Status (fetch products):", res.status);
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setProducts(data.data);
+        } else {
+          setMessage("لا توجد منتجات بعد");
+        }
+      } catch (error) {
+        console.log("Error fetching products:", error.message);
+        setMessage("حدث خطأ أثناء جلب المنتجات");
+      } finally {
+        setLoadingProducts(false);
+      }
+    }
+
+    fetchProducts();
+  }, []);
 
   async function handleBuy(product) {
     try {
-      setLoading(true);
+      setLoadingProductId(product._id);
       setMessage("");
 
       if (typeof window === "undefined" || !window.Pi) {
@@ -103,7 +121,7 @@ export default function StorePage() {
       console.log("HTTP Status: 500 - handleBuy error:", error.message);
       setMessage("حدث خطأ غير متوقع أثناء عملية الشراء");
     } finally {
-      setLoading(false);
+      setLoadingProductId(null);
     }
   }
 
@@ -111,13 +129,27 @@ export default function StorePage() {
     <div style={{ padding: "2rem" }}>
       <h1>متجر Souq Pi</h1>
 
-      <div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px", maxWidth: 300 }}>
-        <h2>{product.name}</h2>
-        <p>{product.price} π</p>
-        <button onClick={() => handleBuy(product)} disabled={loading}>
-          {loading ? "جاري المعالجة..." : "شراء الآن"}
-        </button>
-      </div>
+      {loadingProducts && <p>جاري تحميل المنتجات...</p>}
+
+      {!loadingProducts && products.length === 0 && (
+        <p>
+          لا توجد منتجات بعد. زر الرابط{" "}
+          <code>/api/seed</code> مرة واحدة لإضافة منتج تجريبي.
+        </p>
+      )}
+
+      {products.map((product) => (
+        <div
+          key={product._id}
+          style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px", maxWidth: 300, marginBottom: "1rem" }}
+        >
+          <h2>{product.name}</h2>
+          <p>{product.price} π</p>
+          <button onClick={() => handleBuy(product)} disabled={loadingProductId === product._id}>
+            {loadingProductId === product._id ? "جاري المعالجة..." : "شراء الآن"}
+          </button>
+        </div>
+      ))}
 
       {message && <p style={{ marginTop: "1rem" }}>{message}</p>}
     </div>
