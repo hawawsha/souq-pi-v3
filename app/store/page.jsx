@@ -59,6 +59,7 @@ export default function StorePage() {
 
   async function handleBuy(product) {
     try {
+      console.log("handleBuy called with product:", JSON.stringify(product));
       setLoadingProductId(product._id);
       setMessage("");
 
@@ -78,6 +79,14 @@ export default function StorePage() {
           setMessage("فشل تسجيل الدخول عبر Pi Network. تأكد من الموافقة على الصلاحيات المطلوبة.");
           return;
         }
+      }
+
+      console.log("currentUser from Pi:", JSON.stringify(currentUser));
+
+      if (!currentUser?.uid) {
+        setMessage("لم يتم الحصول على معرّف المستخدم (uid) من Pi Network. حاول تسجيل الدخول من جديد.");
+        console.log("HTTP Status: N/A - currentUser.uid is missing:", currentUser);
+        return;
       }
 
       // 1) إنشاء الطلب في MongoDB
