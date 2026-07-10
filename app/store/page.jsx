@@ -85,8 +85,9 @@ export default function StorePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: product._id,
-          userUid: currentUser.uid,
+          productId: product.productId,
+          buyerUid: currentUser.uid,
+          buyerUsername: currentUser.username,
         }),
       });
 
@@ -103,9 +104,9 @@ export default function StorePage() {
       // 2) استدعاء window.Pi.createPayment
       window.Pi.createPayment(
         {
-          amount: order.amount,
-          memo: `شراء ${order.productName}`,
-          metadata: { orderId: order._id },
+          amount: order.payment.amount,
+          memo: `شراء ${order.product.name}`,
+          metadata: { orderId: order.orderId },
         },
         {
           onReadyForServerApproval: async (paymentId) => {
@@ -114,7 +115,7 @@ export default function StorePage() {
             const approveRes = await fetch("/api/pi/approve-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, orderId: order._id }),
+              body: JSON.stringify({ paymentId, orderId: order.orderId }),
             });
 
             console.log("HTTP Status (approve-payment):", approveRes.status);
@@ -157,7 +158,7 @@ export default function StorePage() {
       );
     } catch (error) {
       console.log("HTTP Status: 500 - handleBuy error:", error.message);
-      setMessage("حدث خطأ غير متوقع أثناء عملية الشراء");
+      setMessage("خطأ: " + error.message);
     } finally {
       setLoadingProductId(null);
     }
