@@ -8,12 +8,21 @@ export default function StorePage() {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [piUser, setPiUser] = useState(null);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  function logDebug(...args) {
+    const line = args
+      .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
+      .join(" ");
+    console.log(...args);
+    setDebugLogs((prev) => [...prev.slice(-30), `${new Date().toLocaleTimeString()} - ${line}`]);
+  }
 
   useEffect(() => {
     async function fetchProducts() {
       try {
         const res = await fetch("/api/products");
-        console.log("HTTP Status (fetch products):", res.status);
+        logDebug("HTTP Status (fetch products):", res.status);
         const data = await res.json();
 
         if (res.ok && data.success) {
@@ -22,7 +31,7 @@ export default function StorePage() {
           setMessage("لا توجد منتجات بعد");
         }
       } catch (error) {
-        console.log("Error fetching products:", error.message);
+        logDebug("Error fetching products:", error.message);
         setMessage("حدث خطأ أثناء جلب المنتجات");
       } finally {
         setLoadingProducts(false);
@@ -33,63 +42,73 @@ export default function StorePage() {
   }, []);
 
   async function authenticateWithPi() {
+    logDebug("authenticateWithPi: started");
     return new Promise((resolve, reject) => {
       if (typeof window === "undefined" || !window.Pi) {
+        logDebug("authenticateWithPi: window.Pi is missing");
         reject(new Error("Pi SDK غير متوفر"));
         return;
       }
 
+      logDebug("authenticateWithPi: window.Pi exists, calling authenticate()");
+
       const onIncompletePaymentFound = (payment) => {
-        console.log("Incomplete payment found:", payment);
-        // في حال وُجد دفع سابق لم يكتمل، يمكن استكماله عبر complete-payment هنا لاحقاً
+        logDebug("Incomplete payment found:", payment);
       };
 
-      window.Pi.authenticate(["payments"], onIncompletePaymentFound)
-        .then((auth) => {
-          console.log("Pi authenticate success:", auth.user.uid);
-          setPiUser(auth.user);
-          resolve(auth);
-        })
-        .catch((error) => {
-          console.log("Pi authenticate error:", error);
-          reject(error);
-        });
+      try {
+        window.Pi.authenticate(["payments"], onIncompletePaymentFound)
+          .then((auth) => {
+            logDebug("Pi authenticate SUCCESS, uid:", auth?.user?.uid);
+            setPiUser(auth.user);
+            resolve(auth);
+          })
+          .catch((error) => {
+            logDebug("Pi authenticate REJECTED:", error?.message || String(error));
+            reject(error);
+          });
+      } catch (syncError) {
+        logDebug("Pi authenticate THREW synchronously:", syncError?.message || String(syncError));
+        reject(syncError);
+      }
     });
   }
 
   async function handleBuy(product) {
+    logDebug("=== handleBuy START for:", product.name, "===");
     try {
-      console.log("handleBuy called with product:", JSON.stringify(product));
       setLoadingProductId(product._id);
       setMessage("");
 
       if (typeof window === "undefined" || !window.Pi) {
+        logDebug("window.Pi not found - stopping here");
         setMessage("Pi SDK غير متوفر. الرجاء فتح الصفحة عبر تطبيق Pi Browser.");
-        console.log("HTTP Status: N/A - window.Pi is undefined");
         return;
       }
 
-      // 0) تسجيل الدخول وطلب صلاحية payments قبل أي عملية شراء
+      logDebug("window.Pi found, proceeding to authenticate");
+
       let currentUser = piUser;
       if (!currentUser) {
         try {
           const auth = await authenticateWithPi();
           currentUser = auth.user;
         } catch (authError) {
+          logDebug("authenticate failed:", authError?.message || String(authError));
           setMessage("فشل تسجيل الدخول عبر Pi Network. تأكد من الموافقة على الصلاحيات المطلوبة.");
           return;
         }
       }
 
-      console.log("currentUser from Pi:", JSON.stringify(currentUser));
+      logDebug("currentUser:", currentUser);
 
       if (!currentUser?.uid) {
+        logDebug("currentUser.uid missing, stopping");
         setMessage("لم يتم الحصول على معرّف المستخدم (uid) من Pi Network. حاول تسجيل الدخول من جديد.");
-        console.log("HTTP Status: N/A - currentUser.uid is missing:", currentUser);
         return;
       }
 
-      // 1) إنشاء الطلب في MongoDB
+      logDebug("Creating order in MongoDB...");
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -100,17 +119,19 @@ export default function StorePage() {
         }),
       });
 
-      console.log("HTTP Status (create order):", orderRes.status);
+      logDebug("HTTP Status (create order):", orderRes.status);
       const orderData = await orderRes.json();
 
       if (!orderRes.ok || !orderData.success) {
+        logDebug("Order creation failed:", orderData.message);
         setMessage(orderData.message || "فشل إنشاء الطلب");
         return;
       }
 
       const order = orderData.data;
+      logDebug("Order created, orderId:", order.orderId);
 
-      // 2) استدعاء window.Pi.createPayment
+      logDebug("Calling window.Pi.createPayment...");
       window.Pi.createPayment(
         {
           amount: order.payment.amount,
@@ -119,7 +140,7 @@ export default function StorePage() {
         },
         {
           onReadyForServerApproval: async (paymentId) => {
-            console.log("Payment ready for approval:", paymentId);
+            logDebug("onReadyForServerApproval:", paymentId);
 
             const approveRes = await fetch("/api/pi/approve-payment", {
               method: "POST",
@@ -127,7 +148,7 @@ export default function StorePage() {
               body: JSON.stringify({ paymentId, orderId: order.orderId }),
             });
 
-            console.log("HTTP Status (approve-payment):", approveRes.status);
+            logDebug("HTTP Status (approve-payment):", approveRes.status);
             const approveData = await approveRes.json();
 
             if (!approveRes.ok || !approveData.success) {
@@ -136,7 +157,7 @@ export default function StorePage() {
           },
 
           onReadyForServerCompletion: async (paymentId, txid) => {
-            console.log("Payment ready for completion:", paymentId, txid);
+            logDebug("onReadyForServerCompletion:", paymentId, txid);
 
             const completeRes = await fetch("/api/pi/complete-payment", {
               method: "POST",
@@ -144,7 +165,7 @@ export default function StorePage() {
               body: JSON.stringify({ paymentId, txid }),
             });
 
-            console.log("HTTP Status (complete-payment):", completeRes.status);
+            logDebug("HTTP Status (complete-payment):", completeRes.status);
             const completeData = await completeRes.json();
 
             if (completeRes.ok && completeData.success) {
@@ -155,20 +176,22 @@ export default function StorePage() {
           },
 
           onCancel: (paymentId) => {
-            console.log("Payment cancelled by user:", paymentId);
+            logDebug("onCancel:", paymentId);
             setMessage("تم إلغاء عملية الدفع");
           },
 
           onError: (error, payment) => {
-            console.log("Pi SDK payment error:", error, payment);
+            logDebug("onError:", error?.message || String(error));
             setMessage("حدث خطأ أثناء الدفع عبر Pi Network");
           },
         }
       );
+      logDebug("window.Pi.createPayment call returned (fire-and-forget)");
     } catch (error) {
-      console.log("HTTP Status: 500 - handleBuy error:", error.message);
+      logDebug("CATCH block error:", error?.message || String(error));
       setMessage("خطأ: " + error.message);
     } finally {
+      logDebug("=== handleBuy FINALLY - resetting loading state ===");
       setLoadingProductId(null);
     }
   }
@@ -199,7 +222,16 @@ export default function StorePage() {
         </div>
       ))}
 
-      {message && <p style={{ marginTop: "1rem" }}>{message}</p>}
+      {message && <p style={{ marginTop: "1rem", fontWeight: "bold" }}>{message}</p>}
+
+      {debugLogs.length > 0 && (
+        <div style={{ marginTop: "2rem", padding: "1rem", background: "#f5f5f5", borderRadius: "8px", direction: "ltr", textAlign: "left" }}>
+          <strong>سجل التصحيح (Debug Log):</strong>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: "12px", marginTop: "0.5rem" }}>
+            {debugLogs.join("\n")}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
