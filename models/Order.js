@@ -1,8 +1,15 @@
 // models/Order.js
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const OrderSchema = new mongoose.Schema(
   {
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
+      default: () => crypto.randomUUID(),
+    },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     productName: { type: String, required: true },
     amount: { type: Number, required: true }, // بعملة Pi
