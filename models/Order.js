@@ -10,22 +10,34 @@ const OrderSchema = new mongoose.Schema(
       unique: true,
       default: () => crypto.randomUUID(),
     },
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
-    productName: { type: String, required: true },
-    amount: { type: Number, required: true }, // بعملة Pi
-    userUid: { type: String, required: true }, // معرف مستخدم Pi Network
-
-    paymentId: { type: String, default: null, index: true },
-    txid: { type: String, default: null },
-
+    buyer: {
+      uid: { type: String, required: true },
+      username: { type: String, default: "" },
+    },
+    seller: {
+      uid: { type: String, required: true },
+      username: { type: String, default: "" },
+    },
+    product: {
+      productId: { type: String, required: true },
+      name: { type: String, required: true },
+      price: { type: Number, required: true },
+    },
+    payment: {
+      paymentId: { type: String, default: null },
+      amount: { type: Number, required: true },
+      status: { type: String, default: "pending" },
+      network: {
+        type: String,
+        default: process.env.PI_NETWORK_ENV === "mainnet" ? "mainnet" : "testnet",
+      },
+      txid: { type: String, default: null },
+    },
     status: {
       type: String,
       enum: ["pending", "approved", "completed", "cancelled"],
       default: "pending",
     },
-
-    approvedAt: { type: Date, default: null },
-    completedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
