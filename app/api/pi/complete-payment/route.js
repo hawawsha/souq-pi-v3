@@ -19,25 +19,22 @@ export async function POST(request) {
 
     await dbConnect();
 
-    const order = await Order.findOne({ "payment.paymentId": paymentId });
-
-    if (!order) {
-      console.log("HTTP Status: 404 - Order not found for paymentId:", paymentId);
-      return NextResponse.json(
-        { success: false, message: "لم يتم العثور على الطلب" },
-        { status: 404 }
-      );
-    }
-
+    // نكمل الدفع مع Pi Network أولاً بأي حال، حتى لو الطلب غير موجود محلياً
+    // (مهم لحل أي دفعات عالقة قديمة من قبل ربط قاعدة البيانات الصحيحة)
     const completedPayment = await piClient.completePayment(paymentId, txid);
 
-    order.payment.status = "completed";
-    order.payment.txid = txid;
-    order.status = "completed";
+    const order = await Order.findOne({ "payment.paymentId": paymentId });
 
-    await order.save();
+    if (order) {
+      order.payment.status = "completed";
+      order.payment.txid = txid;
+      order.status = "completed";
+      await order.save();
+      console.log("HTTP Status: 200 - Payment completed and order updated:", paymentId);
+    } else {
+      console.log("HTTP Status: 200 - Payment completed with Pi, but no matching local order:", paymentId);
+    }
 
-    console.log("HTTP Status: 200 - Payment completed successfully:", paymentId);
     return NextResponse.json(
       { success: true, message: "تم إتمام الدفع بنجاح", data: completedPayment },
       { status: 200 }
