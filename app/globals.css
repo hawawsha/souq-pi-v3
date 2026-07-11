@@ -95,6 +95,13 @@ body {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+.sq-card-media-link,
+.sq-card-name-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
 .sq-card-media {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -267,4 +274,138 @@ body {
   text-align: left;
   max-height: 220px;
   overflow-y: auto;
+}
+
+/* ===== Product detail page ===== */
+.sq-header-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 1.25rem;
+}
+
+.sq-back-link {
+  color: #fff;
+  opacity: 0.9;
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.85rem;
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.sq-wordmark-sm {
+  font-size: 1.5rem;
+}
+
+.sq-detail {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.sq-detail-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--purple-soft);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 30px -18px rgba(46, 16, 101, 0.35);
+}
+
+.sq-detail-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sq-media-fallback-lg {
+  font-size: 5rem;
+}
+
+.sq-coin-lg {
+  width: 4.6rem;
+  height: 4.6rem;
+  top: 1rem;
+  left: 1rem;
+}
+
+.sq-coin-lg .sq-coin-symbol {
+  font-size: 0.9rem;
+}
+
+.sq-coin-lg .sq-coin-amount {
+  font-size: 1.2rem;
+}
+
+.sq-thumbs {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  overflow-x: auto;
+}
+
+.sq-thumb {
+  width: 3.4rem;
+  height: 3.4rem;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: var(--purple-soft);
+}
+
+.sq-thumb.is-active {
+  border-color: var(--purple);
+}
+
+.sq-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sq-detail-body {
+  margin-top: 1.25rem;
+}
+
+.sq-detail-name {
+  font-family: "Almarai", sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.sq-detail-desc {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #4a4560;
+  margin: 0 0 1rem;
+}
+
+.sq-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.sq-meta-chip {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.78rem;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-pill);
+}
+
+.sq-buy-btn-lg {
+  padding: 1rem;
+  font-size: 1.05rem;
 }
