@@ -195,14 +195,36 @@ export default function StorePage() {
             }
           },
 
-          onCancel: (paymentId) => {
+          onCancel: async (paymentId) => {
             logDebug("onCancel:", paymentId);
             setMessage("تم إلغاء عملية الدفع");
+
+            try {
+              const cancelRes = await fetch("/api/orders", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.orderId, status: "cancelled" }),
+              });
+              logDebug("HTTP Status (cancel order):", cancelRes.status);
+            } catch (cancelErr) {
+              logDebug("Failed to mark order as cancelled:", cancelErr.message);
+            }
           },
 
-          onError: (error, payment) => {
+          onError: async (error, payment) => {
             logDebug("onError:", error?.message || String(error));
             setMessage("حدث خطأ أثناء الدفع عبر Pi Network");
+
+            try {
+              const cancelRes = await fetch("/api/orders", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderId: order.orderId, status: "cancelled" }),
+              });
+              logDebug("HTTP Status (cancel order after error):", cancelRes.status);
+            } catch (cancelErr) {
+              logDebug("Failed to mark order as cancelled:", cancelErr.message);
+            }
           },
         }
       );
