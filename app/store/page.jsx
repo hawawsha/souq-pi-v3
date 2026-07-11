@@ -53,7 +53,23 @@ export default function StorePage() {
       logDebug("authenticateWithPi: window.Pi exists, calling authenticate()");
 
       const onIncompletePaymentFound = (payment) => {
-        logDebug("Incomplete payment found:", payment);
+        logDebug("Incomplete payment found, attempting to complete it:", payment.identifier);
+
+        fetch("/api/pi/complete-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentId: payment.identifier,
+            txid: payment.transaction?.txid,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            logDebug("Incomplete payment resolution result:", JSON.stringify(data));
+          })
+          .catch((err) => {
+            logDebug("Failed to resolve incomplete payment:", err.message);
+          });
       };
 
       try {
