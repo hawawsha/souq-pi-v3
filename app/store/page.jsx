@@ -91,11 +91,15 @@ export default function StorePage() {
       let currentUser = piUser;
       if (!currentUser) {
         try {
-          const auth = await authenticateWithPi();
+          const authPromise = authenticateWithPi();
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("انتهت المهلة - Pi Network لم يرد خلال 20 ثانية")), 20000)
+          );
+          const auth = await Promise.race([authPromise, timeoutPromise]);
           currentUser = auth.user;
         } catch (authError) {
           logDebug("authenticate failed:", authError?.message || String(authError));
-          setMessage("فشل تسجيل الدخول عبر Pi Network. تأكد من الموافقة على الصلاحيات المطلوبة.");
+          setMessage("فشل تسجيل الدخول عبر Pi Network: " + (authError?.message || "خطأ غير معروف"));
           return;
         }
       }
