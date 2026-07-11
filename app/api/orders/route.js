@@ -7,6 +7,34 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Notification from "@/models/Notification";
 
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const buyerUid = searchParams.get("buyerUid");
+
+    if (!buyerUid) {
+      console.log("HTTP Status: 400 - Missing buyerUid query param");
+      return NextResponse.json(
+        { success: false, message: "buyerUid مطلوب" },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+
+    const orders = await Order.find({ "buyer.uid": buyerUid }).sort({ createdAt: -1 });
+
+    console.log("HTTP Status: 200 - Fetched orders for buyer:", buyerUid, "count:", orders.length);
+    return NextResponse.json({ success: true, data: orders }, { status: 200 });
+  } catch (error) {
+    console.log("HTTP Status: 500 - Error fetching orders:", error.message);
+    return NextResponse.json(
+      { success: false, message: "حدث خطأ أثناء جلب الطلبات", error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(request) {
   try {
     const { orderId, status } = await request.json();
