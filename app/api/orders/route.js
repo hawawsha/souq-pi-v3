@@ -1,4 +1,6 @@
 // app/api/orders/route.js
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Order from "@/models/Order";
