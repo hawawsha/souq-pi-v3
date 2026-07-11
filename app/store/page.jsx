@@ -1,38 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePiPurchase } from "@/lib/usePiPurchase";
 
 export default function StorePage() {
-  const [loadingProductId, setLoadingProductId] = useState(null);
-  const [message, setMessage] = useState("");
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [piUser, setPiUser] = useState(null);
-  const [debugLogs, setDebugLogs] = useState([]);
+  const [fetchMessage, setFetchMessage] = useState("");
 
-  function logDebug(...args) {
-    const line = args
-      .map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a)))
-      .join(" ");
-    console.log(...args);
-    setDebugLogs((prev) => [...prev.slice(-30), `${new Date().toLocaleTimeString()} - ${line}`]);
-  }
+  const { loadingProductId, message, debugLogs, handleBuy } = usePiPurchase();
 
   useEffect(() => {
     async function fetchProducts() {
       try {
         const res = await fetch("/api/products");
-        logDebug("HTTP Status (fetch products):", res.status);
+        console.log("HTTP Status (fetch products):", res.status);
         const data = await res.json();
 
         if (res.ok && data.success) {
           setProducts(data.data);
         } else {
-          setMessage("لا توجد منتجات بعد");
+          setFetchMessage("لا توجد منتجات بعد");
         }
       } catch (error) {
-        logDebug("Error fetching products:", error.message);
-        setMessage("حدث خطأ أثناء جلب المنتجات");
+        console.log("Error fetching products:", error.message);
+        setFetchMessage("حدث خطأ أثناء جلب المنتجات");
       } finally {
         setLoadingProducts(false);
       }
@@ -41,202 +34,7 @@ export default function StorePage() {
     fetchProducts();
   }, []);
 
-  async function authenticateWithPi() {
-    logDebug("authenticateWithPi: started");
-    return new Promise((resolve, reject) => {
-      if (typeof window === "undefined" || !window.Pi) {
-        logDebug("authenticateWithPi: window.Pi is missing");
-        reject(new Error("Pi SDK غير متوفر"));
-        return;
-      }
-
-      logDebug("authenticateWithPi: window.Pi exists, calling authenticate()");
-
-      const onIncompletePaymentFound = (payment) => {
-        logDebug("Incomplete payment found, attempting to complete it:", payment.identifier);
-
-        fetch("/api/pi/complete-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentId: payment.identifier,
-            txid: payment.transaction?.txid,
-          }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            logDebug("Incomplete payment resolution result:", JSON.stringify(data));
-          })
-          .catch((err) => {
-            logDebug("Failed to resolve incomplete payment:", err.message);
-          });
-      };
-
-      try {
-        window.Pi.authenticate(["payments"], onIncompletePaymentFound)
-          .then((auth) => {
-            logDebug("Pi authenticate SUCCESS, uid:", auth?.user?.uid);
-            setPiUser(auth.user);
-            resolve(auth);
-          })
-          .catch((error) => {
-            logDebug("Pi authenticate REJECTED:", error?.message || String(error));
-            reject(error);
-          });
-      } catch (syncError) {
-        logDebug("Pi authenticate THREW synchronously:", syncError?.message || String(syncError));
-        reject(syncError);
-      }
-    });
-  }
-
-  async function handleBuy(product) {
-    logDebug("=== handleBuy START for:", product.name, "===");
-    try {
-      setLoadingProductId(product._id);
-      setMessage("");
-
-      if (typeof window === "undefined" || !window.Pi) {
-        logDebug("window.Pi not found - stopping here");
-        setMessage("Pi SDK غير متوفر. الرجاء فتح الصفحة عبر تطبيق Pi Browser.");
-        return;
-      }
-
-      logDebug("window.Pi found, proceeding to authenticate");
-
-      let currentUser = piUser;
-      if (!currentUser) {
-        try {
-          const authPromise = authenticateWithPi();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("انتهت المهلة - Pi Network لم يرد خلال 20 ثانية")), 20000)
-          );
-          const auth = await Promise.race([authPromise, timeoutPromise]);
-          currentUser = auth.user;
-        } catch (authError) {
-          logDebug("authenticate failed:", authError?.message || String(authError));
-          setMessage("فشل تسجيل الدخول عبر Pi Network: " + (authError?.message || "خطأ غير معروف"));
-          return;
-        }
-      }
-
-      logDebug("currentUser:", currentUser);
-
-      if (!currentUser?.uid) {
-        logDebug("currentUser.uid missing, stopping");
-        setMessage("لم يتم الحصول على معرّف المستخدم (uid) من Pi Network. حاول تسجيل الدخول من جديد.");
-        return;
-      }
-
-      logDebug("Creating order in MongoDB...");
-      const orderRes = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.productId,
-          buyerUid: currentUser.uid,
-          buyerUsername: currentUser.username,
-        }),
-      });
-
-      logDebug("HTTP Status (create order):", orderRes.status);
-      const orderData = await orderRes.json();
-
-      if (!orderRes.ok || !orderData.success) {
-        logDebug("Order creation failed:", orderData.message);
-        setMessage(orderData.message || "فشل إنشاء الطلب");
-        return;
-      }
-
-      const order = orderData.data;
-      logDebug("Order created, orderId:", order.orderId);
-
-      logDebug("Calling window.Pi.createPayment...");
-      window.Pi.createPayment(
-        {
-          amount: order.payment.amount,
-          memo: `شراء ${order.product.name}`,
-          metadata: { orderId: order.orderId },
-        },
-        {
-          onReadyForServerApproval: async (paymentId) => {
-            logDebug("onReadyForServerApproval:", paymentId);
-
-            const approveRes = await fetch("/api/pi/approve-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, orderId: order.orderId }),
-            });
-
-            logDebug("HTTP Status (approve-payment):", approveRes.status);
-            const approveData = await approveRes.json();
-
-            if (!approveRes.ok || !approveData.success) {
-              setMessage(approveData.message || "فشلت الموافقة على الدفع");
-            }
-          },
-
-          onReadyForServerCompletion: async (paymentId, txid) => {
-            logDebug("onReadyForServerCompletion:", paymentId, txid);
-
-            const completeRes = await fetch("/api/pi/complete-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, txid }),
-            });
-
-            logDebug("HTTP Status (complete-payment):", completeRes.status);
-            const completeData = await completeRes.json();
-
-            if (completeRes.ok && completeData.success) {
-              setMessage("تم الدفع وإتمام الطلب بنجاح ✅");
-            } else {
-              setMessage(completeData.message || "فشل إتمام الدفع");
-            }
-          },
-
-          onCancel: async (paymentId) => {
-            logDebug("onCancel:", paymentId);
-            setMessage("تم إلغاء عملية الدفع");
-
-            try {
-              const cancelRes = await fetch("/api/orders", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: order.orderId, status: "cancelled" }),
-              });
-              logDebug("HTTP Status (cancel order):", cancelRes.status);
-            } catch (cancelErr) {
-              logDebug("Failed to mark order as cancelled:", cancelErr.message);
-            }
-          },
-
-          onError: async (error, payment) => {
-            logDebug("onError:", error?.message || String(error));
-            setMessage("حدث خطأ أثناء الدفع عبر Pi Network");
-
-            try {
-              const cancelRes = await fetch("/api/orders", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderId: order.orderId, status: "cancelled" }),
-              });
-              logDebug("HTTP Status (cancel order after error):", cancelRes.status);
-            } catch (cancelErr) {
-              logDebug("Failed to mark order as cancelled:", cancelErr.message);
-            }
-          },
-        }
-      );
-      logDebug("window.Pi.createPayment call returned (fire-and-forget)");
-    } catch (error) {
-      logDebug("CATCH block error:", error?.message || String(error));
-      setMessage("خطأ: " + error.message);
-    } finally {
-      logDebug("=== handleBuy FINALLY - resetting loading state ===");
-      setLoadingProductId(null);
-    }
-  }
+  const displayMessage = message || fetchMessage;
 
   return (
     <div className="sq-page">
@@ -250,9 +48,7 @@ export default function StorePage() {
       {loadingProducts && <p className="sq-loading">جاري تحميل المنتجات...</p>}
 
       {!loadingProducts && products.length === 0 && (
-        <p className="sq-empty">
-          لا توجد منتجات بعد. زر الرابط <code>/api/seed</code> مرة واحدة لإضافة منتج تجريبي.
-        </p>
+        <p className="sq-empty">لا توجد منتجات بعد.</p>
       )}
 
       <div className="sq-grid">
@@ -260,20 +56,24 @@ export default function StorePage() {
           const image = product.images?.[0];
           return (
             <div className="sq-card" key={product._id}>
-              <div className="sq-card-media">
-                {image ? (
-                  <img src={image} alt={product.name} loading="lazy" />
-                ) : (
-                  <div className="sq-media-fallback">π</div>
-                )}
-                <div className="sq-coin">
-                  <span className="sq-coin-symbol">π</span>
-                  <span className="sq-coin-amount">{product.price}</span>
+              <Link href={`/product/${product.productId}`} className="sq-card-media-link">
+                <div className="sq-card-media">
+                  {image ? (
+                    <img src={image} alt={product.name} loading="lazy" />
+                  ) : (
+                    <div className="sq-media-fallback">π</div>
+                  )}
+                  <div className="sq-coin">
+                    <span className="sq-coin-symbol">π</span>
+                    <span className="sq-coin-amount">{product.price}</span>
+                  </div>
                 </div>
-              </div>
+              </Link>
 
               <div className="sq-card-body">
-                <h2 className="sq-card-name">{product.name}</h2>
+                <Link href={`/product/${product.productId}`} className="sq-card-name-link">
+                  <h2 className="sq-card-name">{product.name}</h2>
+                </Link>
                 {product.category && (
                   <span className="sq-card-category">{product.category}</span>
                 )}
@@ -290,18 +90,18 @@ export default function StorePage() {
         })}
       </div>
 
-      {message && (
+      {displayMessage && (
         <p
           className={
             "sq-message " +
-            (message.includes("✅") || message.includes("نجاح")
+            (displayMessage.includes("✅") || displayMessage.includes("نجاح")
               ? "is-success"
-              : message.includes("خطأ") || message.includes("فشل")
+              : displayMessage.includes("خطأ") || displayMessage.includes("فشل")
               ? "is-error"
               : "is-neutral")
           }
         >
-          {message}
+          {displayMessage}
         </p>
       )}
 
