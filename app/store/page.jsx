@@ -39,6 +39,9 @@ export default function StorePage() {
   return (
     <div className="sq-page">
       <header className="sq-header">
+        <div className="sq-header-nav">
+          <Link href="/orders">طلباتي ←</Link>
+        </div>
         <h1 className="sq-wordmark">
           سوق <span className="pi-glyph">π</span>
         </h1>
