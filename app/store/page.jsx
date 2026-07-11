@@ -218,9 +218,6 @@ export default function StorePage() {
 
   return (
     <div style={{ padding: "2rem" }}>
-      <div style={{ background: "red", color: "white", padding: "1rem", fontSize: "20px", fontWeight: "bold", textAlign: "center", marginBottom: "1rem" }}>
-        VERSION TEST 777 - إذا شفت هذا النص، فالتحديث الجديد وصل فعلاً
-      </div>
       <h1>متجر Souq Pi</h1>
 
       {loadingProducts && <p>جاري تحميل المنتجات...</p>}
