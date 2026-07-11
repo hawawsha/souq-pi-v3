@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/dbConnect";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import Notification from "@/models/Notification";
 
 export async function POST(request) {
   try {
@@ -59,6 +60,24 @@ export async function POST(request) {
     });
 
     console.log("HTTP Status: 201 - Order created:", order.orderId);
+
+    // إنشاء إشعار للمشتري بنفس نمط البيانات الحقيقية الموجودة بالقاعدة
+    try {
+      await Notification.create({
+        uid: order.buyer.uid,
+        type: "payment",
+        title: "Payment pending",
+        message: `Payment of ${order.payment.amount} PI for order ${order.orderId}`,
+        data: {
+          orderId: order.orderId,
+          amount: order.payment.amount,
+          status: order.payment.status,
+        },
+      });
+    } catch (notifError) {
+      console.log("Warning: failed to create notification:", notifError.message);
+    }
+
     return NextResponse.json(
       { success: true, message: "تم إنشاء الطلب بنجاح", data: order },
       { status: 201 }
