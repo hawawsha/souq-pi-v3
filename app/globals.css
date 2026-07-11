@@ -468,3 +468,42 @@ body {
   font-size: 0.78rem;
   color: #8a83a3;
 }
+
+/* ===== Admin form ===== */
+.sq-admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 10px 30px -18px rgba(46, 16, 101, 0.3);
+}
+
+.sq-admin-label {
+  font-family: "Tajawal", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--ink);
+  margin-top: 0.6rem;
+}
+
+.sq-admin-input {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.95rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  color: var(--ink);
+  outline: none;
+}
+
+.sq-admin-input:focus {
+  border-color: var(--purple);
+}
+
+.sq-admin-form .sq-buy-btn {
+  margin-top: 1.1rem;
+}
