@@ -7,6 +7,59 @@ import Order from "@/models/Order";
 import Product from "@/models/Product";
 import Notification from "@/models/Notification";
 
+export async function PATCH(request) {
+  try {
+    const { orderId, status } = await request.json();
+
+    if (!orderId || !status) {
+      console.log("HTTP Status: 400 - Missing orderId or status");
+      return NextResponse.json(
+        { success: false, message: "orderId و status مطلوبان" },
+        { status: 400 }
+      );
+    }
+
+    const allowedStatuses = ["cancelled", "pending", "approved", "completed"];
+    if (!allowedStatuses.includes(status)) {
+      console.log("HTTP Status: 400 - Invalid status:", status);
+      return NextResponse.json(
+        { success: false, message: "قيمة status غير صالحة" },
+        { status: 400 }
+      );
+    }
+
+    await dbConnect();
+
+    const order = await Order.findOne({ orderId });
+
+    if (!order) {
+      console.log("HTTP Status: 404 - Order not found:", orderId);
+      return NextResponse.json(
+        { success: false, message: "لم يتم العثور على الطلب" },
+        { status: 404 }
+      );
+    }
+
+    order.status = status;
+    if (status === "cancelled") {
+      order.payment.status = "cancelled";
+    }
+    await order.save();
+
+    console.log("HTTP Status: 200 - Order status updated:", orderId, "->", status);
+    return NextResponse.json(
+      { success: true, message: "تم تحديث حالة الطلب", data: order },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.log("HTTP Status: 500 - Error updating order status:", error.message);
+    return NextResponse.json(
+      { success: false, message: "حدث خطأ أثناء تحديث حالة الطلب", error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
