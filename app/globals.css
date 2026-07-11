@@ -1,0 +1,270 @@
+/* app/globals.css */
+
+:root {
+  --ink: #1e1b2e;
+  --canvas: #f6f4fc;
+  --surface: #ffffff;
+  --purple: #6d28d9;
+  --purple-deep: #2e1065;
+  --purple-soft: #ede9fe;
+  --blue: #2563eb;
+  --gold: #f5b940;
+  --gold-deep: #c98a12;
+  --line: #e6e1f5;
+  --danger: #d64545;
+  --success: #1f9d55;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-pill: 999px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+body {
+  font-family: "Tajawal", sans-serif;
+}
+
+.sq-page {
+  min-height: 100vh;
+  padding-bottom: 3rem;
+}
+
+/* ===== Header ===== */
+.sq-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 1.5rem 1.25rem 2rem;
+  background: radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.12) 0, transparent 40%),
+    radial-gradient(circle at 85% 0%, rgba(255, 255, 255, 0.1) 0, transparent 35%),
+    linear-gradient(135deg, var(--purple-deep) 0%, var(--purple) 55%, var(--blue) 100%);
+  color: #fff;
+  box-shadow: 0 8px 24px -12px rgba(46, 16, 101, 0.55);
+}
+
+.sq-wordmark {
+  font-family: "Lalezar", "Almarai", sans-serif;
+  font-size: 2.1rem;
+  letter-spacing: 0.5px;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.sq-wordmark .pi-glyph {
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--gold);
+  font-size: 1.6rem;
+}
+
+.sq-tagline {
+  margin: 0.25rem 0 0;
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* ===== Product grid ===== */
+.sq-grid {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.sq-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 30px -18px rgba(46, 16, 101, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sq-card-media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--purple-soft);
+  overflow: hidden;
+  position: relative;
+}
+
+.sq-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sq-card-media .sq-media-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 2.5rem;
+  color: var(--purple);
+  opacity: 0.4;
+}
+
+/* coin badge - signature element */
+.sq-coin {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe9b0, var(--gold) 55%, var(--gold-deep) 100%);
+  border: 2px dashed rgba(46, 16, 101, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--purple-deep);
+  font-family: "Space Grotesk", sans-serif;
+  font-weight: 700;
+  transform: rotate(-8deg);
+  box-shadow: 0 6px 14px -6px rgba(46, 16, 101, 0.55);
+}
+
+.sq-coin .sq-coin-symbol {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.sq-coin .sq-coin-amount {
+  font-size: 0.95rem;
+  line-height: 1.1;
+}
+
+.sq-card-body {
+  padding: 1rem 1.1rem 1.1rem;
+}
+
+.sq-card-name {
+  font-family: "Almarai", sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  margin: 0 0 0.35rem;
+  color: var(--ink);
+}
+
+.sq-card-category {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.78rem;
+  color: var(--purple);
+  background: var(--purple-soft);
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-pill);
+  margin-bottom: 0.75rem;
+}
+
+.sq-buy-btn {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.85rem 1rem;
+  font-family: "Almarai", sans-serif;
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: #fff;
+  background: linear-gradient(120deg, var(--purple) 0%, var(--blue) 100%);
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.sq-buy-btn:active {
+  transform: scale(0.97);
+}
+
+.sq-buy-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ===== States ===== */
+.sq-empty,
+.sq-loading {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 1.25rem;
+  text-align: center;
+  font-family: "Tajawal", sans-serif;
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+.sq-message {
+  max-width: 480px;
+  margin: 1rem auto 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-family: "Almarai", sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.sq-message.is-success {
+  background: #e7f8ee;
+  color: var(--success);
+  border: 1px solid #b7e9c9;
+}
+
+.sq-message.is-error {
+  background: #fdecec;
+  color: var(--danger);
+  border: 1px solid #f5c2c2;
+}
+
+.sq-message.is-neutral {
+  background: var(--purple-soft);
+  color: var(--purple-deep);
+  border: 1px solid #ddd3f7;
+}
+
+/* ===== Debug log (collapsed by default) ===== */
+.sq-debug {
+  max-width: 480px;
+  margin: 1.5rem auto 0;
+  padding: 0 1.25rem;
+}
+
+.sq-debug summary {
+  cursor: pointer;
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.8rem;
+  color: #8a83a3;
+  padding: 0.4rem 0;
+}
+
+.sq-debug pre {
+  background: #fbfaff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  font-size: 0.72rem;
+  color: #56507a;
+  white-space: pre-wrap;
+  direction: ltr;
+  text-align: left;
+  max-height: 220px;
+  overflow-y: auto;
+}
