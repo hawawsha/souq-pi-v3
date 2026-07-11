@@ -217,40 +217,77 @@ export default function StorePage() {
   }
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>متجر Souq Pi</h1>
+    <div className="sq-page">
+      <header className="sq-header">
+        <h1 className="sq-wordmark">
+          سوق <span className="pi-glyph">π</span>
+        </h1>
+        <p className="sq-tagline">تسوّق وادفع مباشرة بعملة Pi</p>
+      </header>
 
-      {loadingProducts && <p>جاري تحميل المنتجات...</p>}
+      {loadingProducts && <p className="sq-loading">جاري تحميل المنتجات...</p>}
 
       {!loadingProducts && products.length === 0 && (
-        <p>
-          لا توجد منتجات بعد. زر الرابط{" "}
-          <code>/api/seed</code> مرة واحدة لإضافة منتج تجريبي.
+        <p className="sq-empty">
+          لا توجد منتجات بعد. زر الرابط <code>/api/seed</code> مرة واحدة لإضافة منتج تجريبي.
         </p>
       )}
 
-      {products.map((product) => (
-        <div
-          key={product._id}
-          style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px", maxWidth: 300, marginBottom: "1rem" }}
-        >
-          <h2>{product.name}</h2>
-          <p>{product.price} π</p>
-          <button onClick={() => handleBuy(product)} disabled={loadingProductId === product._id}>
-            {loadingProductId === product._id ? "جاري المعالجة..." : "شراء الآن"}
-          </button>
-        </div>
-      ))}
+      <div className="sq-grid">
+        {products.map((product) => {
+          const image = product.images?.[0];
+          return (
+            <div className="sq-card" key={product._id}>
+              <div className="sq-card-media">
+                {image ? (
+                  <img src={image} alt={product.name} loading="lazy" />
+                ) : (
+                  <div className="sq-media-fallback">π</div>
+                )}
+                <div className="sq-coin">
+                  <span className="sq-coin-symbol">π</span>
+                  <span className="sq-coin-amount">{product.price}</span>
+                </div>
+              </div>
 
-      {message && <p style={{ marginTop: "1rem", fontWeight: "bold" }}>{message}</p>}
+              <div className="sq-card-body">
+                <h2 className="sq-card-name">{product.name}</h2>
+                {product.category && (
+                  <span className="sq-card-category">{product.category}</span>
+                )}
+                <button
+                  className="sq-buy-btn"
+                  onClick={() => handleBuy(product)}
+                  disabled={loadingProductId === product._id}
+                >
+                  {loadingProductId === product._id ? "جاري المعالجة..." : "شراء الآن"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {message && (
+        <p
+          className={
+            "sq-message " +
+            (message.includes("✅") || message.includes("نجاح")
+              ? "is-success"
+              : message.includes("خطأ") || message.includes("فشل")
+              ? "is-error"
+              : "is-neutral")
+          }
+        >
+          {message}
+        </p>
+      )}
 
       {debugLogs.length > 0 && (
-        <div style={{ marginTop: "2rem", padding: "1rem", background: "#f5f5f5", borderRadius: "8px", direction: "ltr", textAlign: "left" }}>
-          <strong>سجل التصحيح (Debug Log):</strong>
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: "12px", marginTop: "0.5rem" }}>
-            {debugLogs.join("\n")}
-          </pre>
-        </div>
+        <details className="sq-debug">
+          <summary>سجل التصحيح (للمطورين)</summary>
+          <pre>{debugLogs.join("\n")}</pre>
+        </details>
       )}
     </div>
   );
