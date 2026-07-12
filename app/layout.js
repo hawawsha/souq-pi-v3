@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import "./globals.css";
+import "@/lib/pi/piReady";
 
 export default function RootLayout({ children }) {
   return (
@@ -21,6 +22,9 @@ export default function RootLayout({ children }) {
               // sandbox: true فقط أثناء Testnet - غيّرها لـ false عند إطلاق Mainnet
               window.Pi.init({ version: "2.0", sandbox: true });
               console.log("Pi SDK initialized successfully");
+              if (window.__resolvePiReady) {
+                window.__resolvePiReady(true);
+              }
             } else {
               console.log("Pi SDK script loaded but window.Pi is still undefined");
             }
