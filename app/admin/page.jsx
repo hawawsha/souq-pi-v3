@@ -91,6 +91,9 @@ export default function AdminPage() {
       </header>
 
       <div className="sq-detail">
+        <Link href="/admin/refunds" className="sq-buy-btn sq-admin-nav-btn">
+          عرض طلبات الاسترجاع ←
+        </Link>
         {!unlocked ? (
           <form onSubmit={handleUnlock} className="sq-admin-form">
             <label className="sq-admin-label">كلمة سر الإدارة</label>
