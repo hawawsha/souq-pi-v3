@@ -507,3 +507,75 @@ body {
 .sq-admin-form .sq-buy-btn {
   margin-top: 1.1rem;
 }
+
+.sq-admin-nav-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  margin-bottom: 1.25rem;
+  background: linear-gradient(120deg, var(--gold-deep) 0%, var(--gold) 100%);
+}
+
+/* ===== Refunds ===== */
+.sq-refund-status {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.82rem;
+  color: var(--purple-deep);
+  background: var(--purple-soft);
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-md);
+  margin: 0.75rem 0 0;
+}
+
+.sq-refund-meta {
+  font-family: "Tajawal", sans-serif;
+  font-size: 0.82rem;
+  color: #4a4560;
+  margin: 0.5rem 0 0;
+}
+
+.sq-refund-instructions {
+  background: #fff7e6;
+  border: 1px solid #f0d597;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  line-height: 1.7;
+}
+
+.sq-refund-btn {
+  font-family: "Almarai", sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0.55rem 1rem;
+  margin-top: 0.75rem;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(120deg, var(--purple) 0%, var(--blue) 100%);
+}
+
+.sq-refund-btn:disabled {
+  opacity: 0.6;
+}
+
+.sq-refund-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.sq-refund-confirm {
+  background: linear-gradient(120deg, var(--success) 0%, #2fbf71 100%);
+}
+
+.sq-refund-cancel {
+  background: #f2f0fa;
+  color: var(--ink);
+}
+
+.sq-refund-form {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
