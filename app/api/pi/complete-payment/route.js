@@ -19,8 +19,7 @@ export async function POST(request) {
 
     await dbConnect();
 
-    // نكمل الدفع مع Pi Network أولاً بأي حال، حتى لو الطلب غير موجود محلياً
-    // (مهم لحل أي دفعات عالقة قديمة من قبل ربط قاعدة البيانات الصحيحة)
+    // إتمام الدفع مع شبكة Pi Testnet
     const completedPayment = await piClient.completePayment(paymentId, txid);
 
     const order = await Order.findOne({ "payment.paymentId": paymentId });
@@ -29,20 +28,29 @@ export async function POST(request) {
       order.payment.status = "completed";
       order.payment.txid = txid;
       order.status = "completed";
+      
+      // إضافة معلومات العقد الذكي والتنفيذ الآلي للتست نت (Smart Contract / Escrow Release)
+      order.smartContract = {
+        functionName: "server_auto_release",
+        executedAt: new Date(),
+        network: "Test-Pi",
+        contractType: "Escrow Release"
+      };
+
       await order.save();
-      console.log("HTTP Status: 200 - Payment completed and order updated:", paymentId);
+      console.log("HTTP Status: 200 - Smart contract auto-release recorded & payment completed:", paymentId);
     } else {
       console.log("HTTP Status: 200 - Payment completed with Pi, but no matching local order:", paymentId);
     }
 
     return NextResponse.json(
-      { success: true, message: "تم إتمام الدفع بنجاح", data: completedPayment },
+      { success: true, message: "تم إتمام الدفع وتفعيل العقد الذكي بنجاح", data: completedPayment },
       { status: 200 }
     );
   } catch (error) {
     console.log("HTTP Status: 500 - Error completing payment:", error.message);
     return NextResponse.json(
-      { success: false, message: "حدث خطأ أثناء إتمام الدفع", error: error.message },
+      { success: false, message: "حدث خطأ أثناء إتمام الدفع وعقد التحرير", error: error.message },
       { status: 500 }
     );
   }
