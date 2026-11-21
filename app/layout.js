@@ -1,8 +1,8 @@
 "use client";
-
 import Script from "next/script";
 import "./globals.css";
 import "@/lib/pi/piReady";
+import WhatsAppButton from "./components/WhatsAppButton";
 
 export default function RootLayout({ children }) {
   return (
@@ -31,6 +31,7 @@ export default function RootLayout({ children }) {
           }}
         />
         {children}
+        <WhatsAppButton />
       </body>
     </html>
   );
