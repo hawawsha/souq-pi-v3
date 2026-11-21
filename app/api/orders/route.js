@@ -127,8 +127,8 @@ export async function POST(request) {
         username: buyerUsername || buyerUid,
       },
       seller: {
-        uid: product.seller?.uid || "souq-pi",
-        username: product.seller?.username || "Souq Pi",
+        uid: product.seller?.uid || "hawawsheh-store",
+        username: product.seller?.username || "Hawawsheh Store",
       },
       product: {
         productId: product.productId,

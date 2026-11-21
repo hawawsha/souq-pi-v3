@@ -51,7 +51,7 @@ export default function AdminPage() {
             .map((s) => s.trim())
             .filter(Boolean),
           stock: parseInt(form.stock, 10) || 0,
-          sellerUsername: form.sellerUsername || "Souq Pi",
+          sellerUsername: form.sellerUsername || "Hawawsheh Store",
         }),
       });
 
@@ -173,7 +173,7 @@ export default function AdminPage() {
               name="sellerUsername"
               value={form.sellerUsername}
               onChange={handleChange}
-              placeholder="Souq Pi"
+              placeholder="Hawawsheh Store"
             />
 
             <button type="submit" className="sq-buy-btn sq-buy-btn-lg" disabled={submitting}>

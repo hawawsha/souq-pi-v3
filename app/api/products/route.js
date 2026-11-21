@@ -72,8 +72,8 @@ export async function POST(request) {
       images: Array.isArray(images) ? images : images ? [images] : [],
       stock: stock ?? 0,
       seller: {
-        uid: sellerUid || "souq-pi",
-        username: sellerUsername || "Souq Pi",
+        uid: sellerUid || "hawawsheh-store",
+        username: sellerUsername || "Hawawsheh Store",
         walletAddress: sellerWallet || "",
       },
       status: "active",

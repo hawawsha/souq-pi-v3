@@ -41,7 +41,7 @@ export default function ProductDetailPage() {
       <div className="sq-page">
         <header className="sq-header">
           <h1 className="sq-wordmark">
-            سوق <span className="pi-glyph">π</span>
+            Hawawsheh Store <span className="pi-glyph">π</span>
           </h1>
         </header>
         <p className="sq-loading">جاري تحميل المنتج...</p>
@@ -54,7 +54,7 @@ export default function ProductDetailPage() {
       <div className="sq-page">
         <header className="sq-header">
           <h1 className="sq-wordmark">
-            سوق <span className="pi-glyph">π</span>
+            Hawawsheh Store <span className="pi-glyph">π</span>
           </h1>
         </header>
         <p className="sq-empty">
@@ -78,7 +78,7 @@ export default function ProductDetailPage() {
           ← الرجوع للمتجر
         </Link>
         <h1 className="sq-wordmark sq-wordmark-sm">
-          سوق <span className="pi-glyph">π</span>
+          Hawawsheh Store <span className="pi-glyph">π</span>
         </h1>
       </header>
 

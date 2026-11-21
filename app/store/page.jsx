@@ -43,7 +43,7 @@ export default function StorePage() {
           <Link href="/orders">طلباتي ←</Link>
         </div>
         <h1 className="sq-wordmark">
-          سوق <span className="pi-glyph">π</span>
+          Hawawsheh Store <span className="pi-glyph">π</span>
         </h1>
         <p className="sq-tagline">تسوّق وادفع مباشرة بعملة Pi</p>
       </header>
