@@ -5,6 +5,18 @@ import Link from "next/link";
 import { usePiPurchase } from "@/lib/usePiPurchase";
 
 export default function StorePage() {
+  const [isOwnerDebug, setIsOwnerDebug] = useState(false);
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("owner") === "ahmad") {
+        localStorage.setItem("hawawsheh_owner_debug", "1");
+        setIsOwnerDebug(true);
+      } else if (localStorage.getItem("hawawsheh_owner_debug") === "1") {
+        setIsOwnerDebug(true);
+      }
+    } catch {}
+  }, []);
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [fetchMessage, setFetchMessage] = useState("");
@@ -108,7 +120,7 @@ export default function StorePage() {
         </p>
       )}
 
-      {debugLogs.length > 0 && (
+      {isOwnerDebug && debugLogs.length > 0 && (
         <details className="sq-debug">
           <summary>سجل التصحيح (للمطورين)</summary>
           <pre>{debugLogs.join("\n")}</pre>
