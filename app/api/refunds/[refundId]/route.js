@@ -13,6 +13,14 @@ import { submitA2UPayment } from "@/lib/pi/wallet";
 
 const MAX_RETRIES = 2;
 
+function isValidNonEmptyString(value) {
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  const lowered = trimmed.toLowerCase();
+  return lowered !== "null" && lowered !== "undefined";
+}
+
 async function writeLog(action, level, refundId, orderId, actorUid, details) {
   try {
     await Log.create({ action, level, refundId, orderId, actorUid, details });
@@ -41,29 +49,40 @@ async function executeRefundPayment(refund) {
     uid: refund.buyerUid,
   });
 
-  const paymentId = created.identifier;
-  refund.transactionId = paymentId;
+  const paymentId = created?.identifier;
+  if (!isValidNonEmptyString(paymentId)) {
+    throw new Error("لم يتم الحصول على معرف دفعة صالح (paymentId) من Pi Network");
+  }
+
+  refund.transactionId = paymentId.trim();
   await refund.save();
 
-  const paymentDetails = await piClient.getPayment(paymentId);
-  const recipientAddress = paymentDetails.to_address;
+  const paymentDetails = await piClient.getPayment(refund.transactionId);
+  const recipientAddress = paymentDetails?.to_address;
 
-  if (!recipientAddress) {
+  if (!isValidNonEmptyString(recipientAddress)) {
     throw new Error("لم يتم الحصول على عنوان محفظة المستلم من Pi Network");
   }
 
   const txid = await submitA2UPayment({
-    paymentIdentifier: paymentId,
-    recipientAddress,
+    paymentIdentifier: refund.transactionId,
+    recipientAddress: recipientAddress.trim(),
     amount: refund.amount,
   });
 
-  refund.txid = txid;
+  if (!isValidNonEmptyString(txid)) {
+    throw new Error("لم يتم الحصول على معرف معاملة بلوك تشين صالح (txid)");
+  }
+
+  refund.txid = txid.trim();
   await refund.save();
 
-  await piClient.completePayment(paymentId, txid);
+  await piClient.completePayment(refund.transactionId, refund.txid);
 
-  return { paymentId, txid };
+  return {
+    paymentId: refund.transactionId,
+    txid: refund.txid,
+  };
 }
 
 export async function PATCH(request, { params }) {
@@ -144,6 +163,15 @@ export async function PATCH(request, { params }) {
       try {
         const { paymentId, txid } = await executeRefundPayment(refund);
 
+        if (
+          !isValidNonEmptyString(paymentId) ||
+          !isValidNonEmptyString(txid) ||
+          !isValidNonEmptyString(refund.transactionId) ||
+          !isValidNonEmptyString(refund.txid)
+        ) {
+          throw new Error("تعذّر التحقق من وجود paymentId و txid صالحين قبل إكمال الاسترجاع");
+        }
+
         refund.status = "completed";
         refund.completedAt = new Date();
         await refund.save();
@@ -154,7 +182,7 @@ export async function PATCH(request, { params }) {
         }
 
         try {
-          const balance = await Balance.findOneAndUpdate(
+          await Balance.findOneAndUpdate(
             { uid: refund.sellerUid },
             { $inc: { totalRefunds: refund.amount } },
             { upsert: true, new: true }
