@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function POST(request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -56,13 +58,40 @@ export async function POST(request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: message,
-      config: {
-        systemInstruction: `أنت المساعد الذكي لمتجر Hawawsheh Store. أجب باللغة العربية بأسلوب ودود ومختصر ومنظم. ساعد الزبائن في البحث عن المنتجات ومعرفة أسعارها بعملة Pi.${productsContext}`,
-      },
-    });
+    let response = null;
+    let lastError = null;
+    const maxAttempts = 3;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await ai.models.generateContent({
+          model: "gemini-3.8-flash",
+          contents: message,
+          config: {
+            systemInstruction: `أنت المساعد الذكي لمتجر Hawawsheh Store. أجب باللغة العربية بأسلوب ودود ومختصر ومنظم. ساعد الزبائن في البحث عن المنتجات ومعرفة أسعارها بعملة Pi.${productsContext}`,
+          },
+        });
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+        const isHighDemand =
+          err?.status === 503 ||
+          String(err?.message || "").includes("503") ||
+          String(err?.message || "").includes("UNAVAILABLE") ||
+          String(err?.message || "").includes("high demand");
+
+        if (!isHighDemand || attempt === maxAttempts) {
+          throw err;
+        }
+
+        await sleep(800 * attempt);
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
 
     const replyText = response?.text?.trim();
 
