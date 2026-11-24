@@ -1,22 +1,23 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 
-function AiSparkIcon({ className = "w-6 h-6" }) {
+function AiSparkIcon({ size = 24 }) {
   return (
     <svg
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
-      className={className}
       aria-hidden="true"
+      style={{ display: "block", flexShrink: 0 }}
     >
       <path
         d="M12 2.5L14.2 8.8L20.5 11L14.2 13.2L12 19.5L9.8 13.2L3.5 11L9.8 8.8L12 2.5Z"
-        fill="white"
+        fill="#FFFFFF"
       />
       <path
-        d="M18.8 15.5L19.8 18.2L22.5 19.2L19.8 20.2L18.8 22.9L17.8 20.2L15.1 19.2L17.8 18.2Z"
+        d="M18.8 15.5L19.8 18.2L22.5 19.2L19.8 20.2L18.8 22.9L17.8 20.2L15.1 19.2L17.8 18.2L18.8 15.5Z"
         fill="#BFDBFE"
       />
     </svg>
@@ -25,14 +26,12 @@ function AiSparkIcon({ className = "w-6 h-6" }) {
 
 export default function ChatAgent() {
   const [isOpen, setIsOpen] = useState(false);
-
   const [messages, setMessages] = useState([
     {
       role: "bot",
       text: "أهلاً بك في Hawawsheh Store ✨\nيسعدني مساعدتك في العثور على المنتجات ومعرفة الأسعار والتفاصيل. كيف يمكنني مساعدتك؟",
     },
   ]);
-
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,60 +39,38 @@ export default function ChatAgent() {
   const inputRef = useRef(null);
   const sendingRef = useRef(false);
 
-  // تمرير الرسائل إلى الأسفل
   useEffect(() => {
     if (isOpen) {
-      endRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-    }
-  }, [messages, loading, isOpen]);
-
-  // التركيز على حقل الكتابة عند فتح النافذة
-  useEffect(() => {
-    if (isOpen) {
+      endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       const frame = requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
-
       return () => cancelAnimationFrame(frame);
     }
-  }, [isOpen]);
+  }, [messages, loading, isOpen]);
 
-  // إرسال الرسالة
   const sendMessage = async (e) => {
     e?.preventDefault();
-
     const trimmed = input.trim();
-
     if (!trimmed || sendingRef.current) return;
 
     sendingRef.current = true;
-
-    setMessages((prev) => [
-      ...prev,
-      { role: "user", text: trimmed },
-    ]);
-
+    setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setInput("");
     setLoading(true);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: trimmed,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: trimmed }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error("chat_request_failed");
+        const errMsg = data?.error || data?.message || "chat_request_failed";
+        throw new Error(errMsg);
       }
 
       const reply =
@@ -107,18 +84,14 @@ export default function ChatAgent() {
         throw new Error("empty_response");
       }
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", text: reply },
-      ]);
+      setMessages((prev) => [...prev, { role: "bot", text: reply }]);
     } catch (error) {
       console.error("ChatAgent error:", error);
-
       setMessages((prev) => [
         ...prev,
         {
           role: "bot",
-          text: "عذراً، لم أتمكن من معالجة طلبك حالياً. يرجى المحاولة مرة أخرى بعد قليل.",
+          text: "عذراً، لم أتمكن من معالجة طلبك حالياً. تأكد من إعدادات المساعد أو حاول مرة أخرى بعد قليل.",
         },
       ]);
     } finally {
@@ -130,8 +103,11 @@ export default function ChatAgent() {
   return (
     <div
       dir="rtl"
-      className="fixed bottom-5 right-5 z-[60]"
       style={{
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        zIndex: 9999,
         fontFamily: "'Tajawal', 'Almarai', sans-serif",
       }}
     >
@@ -139,48 +115,75 @@ export default function ChatAgent() {
         <section
           role="dialog"
           aria-label="مساعد Hawawsheh Store الذكي"
-          className="
-            absolute bottom-16 right-0
-            flex flex-col
-            w-[calc(100vw-2rem)] sm:w-[380px]
-            h-[min(560px,calc(100dvh-7rem))]
-            max-h-[calc(100dvh-7rem)]
-            overflow-hidden
-            rounded-3xl
-            border border-indigo-100
-            bg-white
-            shadow-2xl
-            animate-in fade-in slide-in-from-bottom-3
-            duration-200
-          "
+          style={{
+            position: "absolute",
+            bottom: "68px",
+            right: "0px",
+            width: "min(360px, calc(100vw - 40px))",
+            height: "min(480px, calc(100dvh - 110px))",
+            backgroundColor: "#FFFFFF",
+            borderRadius: "24px",
+            border: "1px solid #E0E7FF",
+            boxShadow: "0 20px 45px rgba(30, 27, 75, 0.22)",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
         >
-          {/* رأس المحادثة */}
-          <header className="
-            shrink-0
-            flex items-center justify-between
-            px-4 py-4
-            text-white
-            bg-gradient-to-l from-purple-800 via-indigo-700 to-blue-600
-          ">
-            <div className="flex items-center gap-3">
-              <div className="
-                flex items-center justify-center
-                w-11 h-11
-                rounded-2xl
-                bg-white/15
-                border border-white/20
-              ">
-                <AiSparkIcon className="w-6 h-6" />
+          {/* رأس النافذة */}
+          <header
+            style={{
+              background: "linear-gradient(135deg, #6B21A8 0%, #4338CA 55%, #2563EB 100%)",
+              color: "#FFFFFF",
+              padding: "14px 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "14px",
+                  backgroundColor: "rgba(255, 255, 255, 0.18)",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <AiSparkIcon size={20} />
               </div>
-
-              <div>
-                <h3 className="font-bold text-sm">
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    lineHeight: 1.3,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   مساعد Hawawsheh الذكي
-                </h3>
-
-                <p className="text-[11px] text-blue-100 mt-1">
-                  مساعدك للتسوق والإجابة عن استفساراتك
-                </p>
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
+                    color: "#DBEAFE",
+                    marginTop: "2px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  مساعدك للتسوق والاستفسارات
+                </div>
               </div>
             </div>
 
@@ -188,93 +191,89 @@ export default function ChatAgent() {
               type="button"
               onClick={() => setIsOpen(false)}
               aria-label="إغلاق المحادثة"
-              className="
-                w-9 h-9 rounded-full
-                flex items-center justify-center
-                bg-white/15 hover:bg-white/25
-                transition
-                text-lg
-              "
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "9999px",
+                backgroundColor: "rgba(255, 255, 255, 0.18)",
+                color: "#FFFFFF",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "18px",
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
             >
               ×
             </button>
           </header>
 
-          {/* الرسائل */}
+          {/* منطقة الرسائل */}
           <div
-            className="
-              flex-1 min-h-0
-              overflow-y-auto
-              overscroll-contain
-              p-4 space-y-3
-              bg-gradient-to-b
-              from-indigo-50/50 to-slate-50
-            "
             aria-live="polite"
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              padding: "14px",
+              background: "linear-gradient(180deg, #F5F3FF 0%, #F8FAFC 100%)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
           >
-            <div className="text-center text-[10px] text-slate-400 py-1">
-              مرحباً بك في عالم Hawawsheh Store
-            </div>
-
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={`flex ${
-                  m.role === "user"
-                    ? "justify-start"
-                    : "justify-end"
-                }`}
-              >
+            {messages.map((m, i) => {
+              const isUser = m.role === "user";
+              return (
                 <div
-                  className={`
-                    max-w-[85%]
-                    px-4 py-3
-                    rounded-2xl
-                    text-[13px]
-                    leading-relaxed
-                    whitespace-pre-wrap
-                    break-words
-                    ${
-                      m.role === "user"
-                        ? "bg-gradient-to-l from-purple-700 to-indigo-600 text-white rounded-br-sm shadow-sm"
-                        : "bg-white text-slate-800 border border-indigo-100 rounded-bl-sm shadow-sm"
-                    }
-                  `}
+                  key={i}
+                  style={{
+                    display: "flex",
+                    justifyContent: isUser ? "flex-start" : "flex-end",
+                  }}
                 >
-                  {m.text}
+                  <div
+                    style={{
+                      maxWidth: "84%",
+                      padding: "10px 13px",
+                      borderRadius: isUser
+                        ? "18px 18px 4px 18px"
+                        : "18px 18px 18px 4px",
+                      background: isUser
+                        ? "linear-gradient(135deg, #7E22CE 0%, #4F46E5 100%)"
+                        : "#FFFFFF",
+                      color: isUser ? "#FFFFFF" : "#1E293B",
+                      border: isUser ? "none" : "1px solid #E2E8F0",
+                      boxShadow: "0 2px 8px rgba(15, 23, 42, 0.05)",
+                      fontSize: "13px",
+                      lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {m.text}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
-            {/* مؤشر التفكير */}
             {loading && (
-              <div className="flex justify-end">
-                <div className="
-                  flex items-center gap-1.5
-                  px-4 py-3
-                  bg-white
-                  border border-indigo-100
-                  rounded-2xl rounded-bl-sm
-                  shadow-sm
-                ">
-                  <span className="text-[11px] text-slate-500 ml-1">
-                    يكتب الآن
-                  </span>
-
-                  {[0, 150, 300].map((delay) => (
-                    <span
-                      key={delay}
-                      className="
-                        w-1.5 h-1.5
-                        rounded-full
-                        bg-indigo-600
-                        animate-bounce
-                      "
-                      style={{
-                        animationDelay: `${delay}ms`,
-                      }}
-                    />
-                  ))}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "18px 18px 18px 4px",
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E2E8F0",
+                    color: "#4F46E5",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  جاري البحث والكتابة...
                 </div>
               </div>
             )}
@@ -282,108 +281,85 @@ export default function ChatAgent() {
             <div ref={endRef} />
           </div>
 
-          {/* منطقة الكتابة */}
+          {/* شريط الكتابة */}
           <form
             onSubmit={sendMessage}
-            className="
-              shrink-0
-              p-3
-              bg-white
-              border-t border-indigo-100
-            "
+            style={{
+              padding: "10px 12px",
+              backgroundColor: "#FFFFFF",
+              borderTop: "1px solid #E2E8F0",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexShrink: 0,
+            }}
           >
-            <div className="flex items-center gap-2">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="اكتب سؤالك هنا..."
-                aria-label="اكتب رسالتك للمساعد"
-                autoComplete="off"
-                disabled={loading}
-                className="
-                  flex-1 min-w-0
-                  px-4 py-3
-                  text-[13px]
-                  text-slate-800
-                  bg-slate-50
-                  border border-slate-200
-                  rounded-2xl
-                  outline-none
-                  focus:border-indigo-500
-                  focus:bg-white
-                  transition
-                  disabled:opacity-60
-                "
-              />
-
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="
-                  px-4 py-3
-                  rounded-2xl
-                  text-white text-xs font-bold
-                  bg-gradient-to-l from-purple-700 to-blue-600
-                  hover:brightness-110
-                  disabled:opacity-40
-                  transition
-                  shrink-0
-                "
-              >
-                إرسال
-              </button>
-            </div>
-
-            <p className="
-              text-center
-              text-[10px]
-              text-slate-400
-              mt-2
-            ">
-              Hawawsheh Store · مساعدك الذكي
-            </p>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="اكتب سؤالك هنا..."
+              aria-label="اكتب رسالتك للمساعد"
+              autoComplete="off"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "10px 12px",
+                fontSize: "13px",
+                color: "#0F172A",
+                backgroundColor: "#F8FAFC",
+                border: "1px solid #CBD5E1",
+                borderRadius: "14px",
+                outline: "none",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "14px",
+                border: "none",
+                background: "linear-gradient(135deg, #6B21A8 0%, #2563EB 100%)",
+                color: "#FFFFFF",
+                fontSize: "12px",
+                fontWeight: 700,
+                cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+                opacity: loading || !input.trim() ? 0.45 : 1,
+                flexShrink: 0,
+              }}
+            >
+              إرسال
+            </button>
           </form>
         </section>
       )}
 
-      {/* زر فتح المساعد */}
+      {/* زر فتح المساعد الدائري */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={
-          isOpen ? "إغلاق المساعد الذكي" : "فتح المساعد الذكي"
-        }
+        aria-label={isOpen ? "إغلاق المساعد الذكي" : "فتح المساعد الذكي"}
         aria-expanded={isOpen}
-        className="
-          relative
-          w-14 h-14
-          rounded-full
-          flex items-center justify-center
-          bg-gradient-to-tr from-purple-700 via-indigo-600 to-blue-500
-          text-white
-          border-2 border-white
-          shadow-xl
-          hover:scale-105
-          hover:brightness-110
-          active:scale-95
-          transition
-        "
+        style={{
+          width: "54px",
+          height: "54px",
+          borderRadius: "9999px",
+          background: "linear-gradient(135deg, #6B21A8 0%, #4F46E5 55%, #2563EB 100%)",
+          color: "#FFFFFF",
+          border: "2px solid #FFFFFF",
+          boxShadow: "0 10px 25px rgba(79, 70, 229, 0.35)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+        }}
       >
         {isOpen ? (
-          <span className="text-2xl font-light">×</span>
+          <span style={{ fontSize: "24px", lineHeight: 1 }}>×</span>
         ) : (
-          <>
-            <AiSparkIcon className="w-7 h-7" />
-            <span className="
-              absolute top-0 right-0
-              w-3.5 h-3.5
-              rounded-full
-              bg-emerald-400
-              border-2 border-white
-            " />
-          </>
+          <AiSparkIcon size={24} />
         )}
       </button>
     </div>
