@@ -5,7 +5,8 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(request) {
   try {
-    const { message } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const message = typeof body?.message === "string" ? body.message.trim() : "";
 
     if (!message) {
       return NextResponse.json(
@@ -14,14 +15,34 @@ export async function POST(request) {
       );
     }
 
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { success: false, message: "مفتاح GEMINI_API_KEY غير مضبوط" },
+        { status: 500 }
+      );
+    }
+
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: message,
+      config: {
+        systemInstruction:
+          "أنت المساعد الذكي لمتجر Hawawsheh Store. أجب باللغة العربية بأسلوب ودود ومختصر ومنظم، وساعد الزبائن في الاستفسارات والمنتجات والتسوق بوضوح.",
+      },
     });
+
+    const replyText = response?.text?.trim();
+
+    if (!replyText) {
+      return NextResponse.json(
+        { success: false, message: "لم يتم استلام نص من النموذج" },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      reply: response.text,
+      reply: replyText,
     });
   } catch (error) {
     console.error("Gemini API Error:", error);
