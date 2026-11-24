@@ -3,6 +3,7 @@ import Script from "next/script";
 import "./globals.css";
 import "@/lib/pi/piReady";
 import WhatsAppButton from "./components/WhatsAppButton";
+import ChatAgent from "./components/ChatAgent";
 
 export default function RootLayout({ children }) {
   return (
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
         />
         {children}
         <WhatsAppButton />
+        <ChatAgent />
       </body>
     </html>
   );
